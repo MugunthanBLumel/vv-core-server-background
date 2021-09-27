@@ -1,0 +1,10 @@
+.mypy_cache
+.coverage
+htmlcov
+*/.vscode
+docker-stack.yml
+env/*
+workspace.code-workspace
+**/__pycache__/**
+src/log/**
+src/.env
