@@ -11,28 +11,29 @@ class CRUDUserBIFolder(CRUDBase[UserBIFolder, UserBIFolderCreate, UserBIFolderUp
         self,
         db: Session,
         *,
-        agent_user_id_list: List[int]
+        agent_instance_user_id_set: List[int]
     ) -> List[UserBIFolder]:
         bi_folder_user_mapping_list: List[UserBIFolder] = []
         
-        start,end = 0, len(agent_user_id_list)
+        start,end = 0, len(agent_instance_user_id_set)
         limit = 1000
         while start < end :
             slice_range: slice = slice(start, start + min(limit, end - start))
             
-            limited_agent_user_id_list: List[int] = agent_user_id_list[slice_range]
+            limited_agent_instance_user_id_set: List[int] = agent_instance_user_id_set[slice_range]
             
             bi_folder_user_mapping_list += self.get(
                     SearchQueryModel(
                     db,
-                    search_column=[UserBIFolder.bi_folder_id,UserBIFolder.agent_user_id,
-                    UserBIFolder.report_count],
-                    filters=[UserBIFolder.agent_user_id.in_(limited_agent_user_id_list)],
+                    search_column=[UserBIFolder.bi_folder_id,UserBIFolder.agent_instance_user_id,
+                    UserBIFolder.bi_report_count],
+                    filters=[UserBIFolder.agent_instance_user_id.in_(limited_agent_instance_user_id_set)],
                     )
                 )
             
             start += min(limit, end - start)
         return bi_folder_user_mapping_list
-    def insert_folder_users(self,db, folder_user_list: List[UserBIFolder]):
-        self.batch_insert(db,obj_in=folder_user_list)
+
+    def insert_folder_users(self,db, folder_user_list: List[UserBIFolder]) -> Session:
+        return self.batch_insert(db,obj_in=folder_user_list)
 user_bi_folder = CRUDUserBIFolder(UserBIFolder)

@@ -12,61 +12,62 @@ class CRUDBIReports(CRUDBase[BIReport, BIReportCreate, BIReportUpdate]):
         self,
         db: Session,
         *,
-        agent_id
+        agent_instance_id
     ) -> List[BIReport]:
         report_search: SearchQueryModel = SearchQueryModel(
             db,
             search_column=[
                 BIReport.idx,
                 BIReport.path,
-                BIReport.reportid_agentid_path_hash,
+                BIReport.guid,
                 BIReport.update_hash,
-                # UserBIReport.agent_user_id
+                UserBIReport.agent_instance_user_id
+            ],
+           join=[JoinModel(model=Model(UserBIReport),
+            relationship=[
+                BIReport.idx == UserBIReport.bi_report_id,
+                BIReport.agent_instance_id == agent_instance_id
+            ])
             ],
             filters=[
-                BIReport.agent_id == agent_id
-            ]
-            # join=[JoinModel(model=Model(UserBIReport),
-            # relationship=[
-            #     BIReport.idx == UserBIReport.report_id,
-            #     BIReport.agent_id == agent_id
-            # ])
-            # ]
+                # BIReport.agent_instance_id == agent_instance_id
+            ],
         )
         return cast(List[BIReport],self.get(report_search))
 
-    def get_reports_by_agent_user_id(
+    def get_reports_by_agent_instance_user_id(
         self,
         db: Session,
         *,
-        agent_user_id
+        agent_instance_user_id
     ) -> List[AgentReports]:
         report_search: SearchQueryModel = SearchQueryModel(
             db,
             search_column=[
                 BIReport.idx,
                 BIReport.path,
-                BIReport.reportid_agentid_path_hash,
+                BIReport.guid,
                 BIReport.update_hash,
-                UserBIReport.agent_user_id
+                UserBIReport.agent_instance_user_id
             ],
             join=[JoinModel(model=Model(UserBIReport),
             relationship=[
-                BIReport.idx == UserBIReport.report_id,
-                UserBIReport.agent_user_id == agent_user_id
+                BIReport.idx == UserBIReport.bi_report_id,
+                UserBIReport.agent_instance_user_id == agent_instance_user_id
             ])
             ]
         )
         return cast(List[AgentReports],self.get(report_search))
 
-    def insert_reports(self,db, report_list: List[BIReport]):
+    def create_reports(self,db, report_list: List[BIReport]) -> Session:
         self.batch_insert(db,obj_in=report_list)
-    
+        return db
+
     def get_reports_by_sync_id(self,db: Session,*, sync_id: int) -> List[BIReport]:
         report_search: SearchQueryModel = SearchQueryModel(
             db,
             search_column=[BIReport.idx,
-            BIReport.reportid_agentid_path_hash],
+            BIReport.guid],
             filters=[BIReport.sync_id == sync_id,
             ]
         )

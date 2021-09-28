@@ -13,9 +13,9 @@ class BIReportUpdate(BaseModel):
 class AgentReports(BaseModel):
     idx: int
     path: str 
-    reportid_agentid_path_hash: str
+    guid: str
     update_hash: str
-    agent_user_id: int
+    agent_instance_user_id: int
 
 
 

@@ -10,8 +10,8 @@ class UserBIReport(Base):
     __tablename__ = "user_bi_report"  # type: ignore
 
     idx = Column("id", Integer, Sequence("user_bi_report_id_seq"), primary_key=True)
-    agent_user_id = Column(Integer, ForeignKey("agent_user.id"), nullable=False)
-    report_id = Column(Integer, ForeignKey("bi_report.id"), nullable=True)
+    agent_instance_user_id = Column(Integer, ForeignKey("agent_instance_user.id"), nullable=False)
+    bi_report_id = Column(Integer, ForeignKey("bi_report.id"), nullable=True)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
     created_by = Column(Integer, nullable=False)
     updated_by = Column(Integer, nullable=False)

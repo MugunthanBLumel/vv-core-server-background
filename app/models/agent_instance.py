@@ -4,12 +4,12 @@ from app.conf import codes
 from app.db.base_class import Base
 
 
-class Agent(Base):
+class AgentInstance(Base):
     """This table contains the configuration details of the added agent"""
 
-    __tablename__ = "agent"  # type: ignore
+    __tablename__ = "agent_instance"  # type: ignore
 
-    idx = Column("id", Integer, Sequence("agent_id_seq"), primary_key=True)
+    idx = Column("id", Integer, Sequence("agent_instance_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
     created_by = Column(Integer, nullable=False)

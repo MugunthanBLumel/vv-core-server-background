@@ -16,9 +16,9 @@ class BIFolder(Base):
     source_folder_id = Column(Integer,  ForeignKey("bi_folder.id"), nullable=True)
     path = Column(DatabaseHelper.get_char_seq_type(), nullable=False)
     depth = Column(Integer, nullable=False, default=1)
-    agent_id = Column(Integer, ForeignKey("agent.id"), nullable=False)
+    agent_instance_id = Column(Integer, ForeignKey("agent_instance.id"), nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
-    agent_id_path_hash = Column(String(50), nullable=False)
+    guid = Column(String(50), nullable=False)
     sync_id = Column(Integer, nullable=False)
     created_by = Column(Integer, nullable=False)
     updated_by = Column(Integer, nullable=False)
@@ -32,14 +32,14 @@ class BIFolder(Base):
         path: str,
         depth: int,
         user_id: int,
-        agent_id: int,
+        agent_instance_id: int,
         source_folder_id: Optional[int] = None,
         parent: Optional["BIFolder"] = None,
     ):
         self.name = name
         self.user_id = user_id
         self.path = path
-        self.agent_id = agent_id
+        self.agent_instance_id = agent_instance_id
         self.depth = depth
         self.created_by = user_id
         self.updated_by = user_id

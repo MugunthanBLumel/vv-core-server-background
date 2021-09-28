@@ -164,8 +164,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             logger.exception(identifier)
             db.rollback()
             raise Exception("Error occured while inserting data in the database")
-    c=0
-    def bulk_core_insert(self,db,*,obj_in):
+
+    def bulk_core_insert(self,*,obj_in):
         # engine.execute(
         #     self.model.__table__.insert(),
         #     obj_in
@@ -174,20 +174,44 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db.bulk_insert_mappings(self.model,
         obj_in,return_defaults=False)
         db.commit()
+        db.close()
         
+
     
     def batch_insert(self,db, *,obj_in: Union[List[ModelType]], batch_limit: int = 1000) -> None:
-        
-        # worker: Worker = Worker(worker_count=5)
+        worker: Worker = Worker(worker_count=5)
         start,end = 0, len(obj_in)
         while start<end:
             
             limited_obj_in = obj_in[start:start+min(batch_limit,end-start)]
-            # worker.add_job(target=self.bulk_core_insert,kwargs={"obj_in": limited_obj_in})
+            worker.add_job(target=self.bulk_core_insert,kwargs={"obj_in": limited_obj_in})
             self.bulk_core_insert(db,obj_in=limited_obj_in)
             start+=min(batch_limit,end-start)
-        # worker.start()
+        worker.start()
+        db.close()
+        db=ScopedSession()
+        return db
         
+    def bulk_core_update(self,*,obj_in):
+        db: Session= ScopedSession()
+        db.bulk_update_mappings(self.model,
+        obj_in,return_defaults=False)
+        db.commit()
+        db.close()
+
+    def batch_update(self,db, *,obj_in: Union[List[ModelType]], batch_limit: int = 1000) -> None:
+        worker: Worker = Worker(worker_count=5)
+        start,end = 0, len(obj_in)
+        while start<end:
+            
+            limited_obj_in = obj_in[start:start+min(batch_limit,end-start)]
+            worker.add_job(target=self.bulk_core_insert,kwargs={"obj_in": limited_obj_in})
+            #self.bulk_core_update(db,obj_in=limited_obj_in)
+            start+=min(batch_limit,end-start)
+        worker.start()
+        db.close()
+        db=ScopedSession()
+        return db
         
 
     def create_all(self, db: Session, *, obj_in: Union[List[ModelType]],return_defaults=False) -> None:

@@ -11,9 +11,9 @@ class BIFolderCreate(BaseModel):
     name: str
     source_folder_id: Optional[int]
     path: str
-    agent_id: int
+    agent_instance_id: int
     depth: int 
-    agent_id_path_hash: int
+    guid: int
     sync_id: int
     
 class BIFolderUpdate(BaseModel):
@@ -21,6 +21,6 @@ class BIFolderUpdate(BaseModel):
 
 class AgentFolders(BaseModel):
     idx: int
-    agent_id_path_hash: str 
-    agent_user_id: int
-    report_count: int
+    guid: str 
+    agent_instance_user_id: int
+    bi_report_count: int

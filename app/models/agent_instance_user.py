@@ -4,14 +4,14 @@ from app.conf import codes
 from app.db.base_class import Base
 
 
-class AgentUser(Base):
-    """This table maps the user and agent along with their details"""
+class AgentInstanceUser(Base):
+    """This table maps the user and agent instance along with their details"""
 
-    __tablename__ = "agent_user"  # type: ignore
+    __tablename__ = "agent_instance_user"  # type: ignore
 
-    idx = Column("id", Integer, Sequence("agent_user_id_seq"), primary_key=True)
+    idx = Column("id", Integer, Sequence("agent_instance_user_id_seq"), primary_key=True)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
-    agent_id = Column(Integer, ForeignKey("agent.id"), nullable=False)
+    agent_instance_id = Column(Integer, ForeignKey("agent_instance.id"), nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
     created_by = Column(Integer, nullable=False)
     updated_by = Column(Integer, nullable=False)
