@@ -26,7 +26,57 @@ from app.models.bi_report import BIReport
 
 router: APIRouter = APIRouter(route_class=TimedRoute)
 
+def update(
+        db: Session,
+        filters = [],
+        commit: bool = True,
+        *,
+        obj_in,
+        user_id: int,
+    ) -> None:
+        """updates existing records which matches the provided filter,
+        updates all record if filter is empty
 
+        Parameters
+        ----------
+        db : Session
+            Database session object
+        obj_in : Union[ UpdateSchemaType,
+                 Dict[str, GenericFunction],
+                 Dict[Column, GenericFunction], ]
+            data to be updated or generic function that will return dynamic data
+            to update
+        filters : List[ColumnElement], optional
+            filter to perform update for, by default []
+        commit : bool, optional
+             flag to skip commit, by default True
+        user_id : int
+             user_id of the user performing update
+        Raises
+        ------
+            Raises DbException and the transaction is rolledback
+        """
+        
+        
+        if isinstance(obj_in, dict):
+            update_data = obj_in
+        else:
+            update_data = obj_in.dict(exclude_unset=True)
+        db.query(BIReport).filter(*filters).update(
+            {
+                **update_data,
+                "updated_at": str(int(time.time())),
+                "updated_by": user_id,
+            },
+            synchronize_session=False,
+        )
+        if commit:
+            db.commit()
+       
+def test_update():
+    t1=time.time()
+    for i in range(100):
+        pass
 @router.post("/sync", response_model=None)
 def report_sync(
     db: Session = Depends(deps.get_db),

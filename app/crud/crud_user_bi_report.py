@@ -11,22 +11,22 @@ class CRUDUserBIReport(CRUDBase[UserBIReport, UserBIReportCreate, UserBIReportUp
         self,
         db: Session,
         *,
-        agent_instance_user_id_set: set[int]
+        agent_instance_user_id_list: List[int]
     ) -> List[UserBIReport]:
         bi_report_user_mapping_list: List[UserBIReport] = []
         
-        start,end = 0, len(agent_instance_user_id_set)
+        start,end = 0, len(agent_instance_user_id_list)
         limit = 1000
         while start < end :
             slice_range: slice = slice(start, start + min(limit, end - start))
             
-            limited_agent_instance_user_id_set: set[int] = agent_instance_user_id_set[slice_range]
+            limited_agent_instance_user_id_list: List[int] = agent_instance_user_id_list[slice_range]
             
             bi_report_user_mapping_list += self.get(
                     SearchQueryModel(
                     db,
                     search_column=[UserBIReport.bi_report_id,UserBIReport.agent_instance_user_id],
-                    filters=[UserBIReport.agent_instance_user_id.in_(limited_agent_instance_user_id_set)],
+                    filters=[UserBIReport.agent_instance_user_id.in_(limited_agent_instance_user_id_list)],
                     )
                 )
             

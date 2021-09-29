@@ -11,23 +11,23 @@ class CRUDUserBIFolder(CRUDBase[UserBIFolder, UserBIFolderCreate, UserBIFolderUp
         self,
         db: Session,
         *,
-        agent_instance_user_id_set: List[int]
+        agent_instance_user_id_list: List[int]
     ) -> List[UserBIFolder]:
         bi_folder_user_mapping_list: List[UserBIFolder] = []
         
-        start,end = 0, len(agent_instance_user_id_set)
+        start,end = 0, len(agent_instance_user_id_list)
         limit = 1000
         while start < end :
             slice_range: slice = slice(start, start + min(limit, end - start))
             
-            limited_agent_instance_user_id_set: List[int] = agent_instance_user_id_set[slice_range]
+            limited_agent_instance_user_id_list: List[int] = agent_instance_user_id_list[slice_range]
             
             bi_folder_user_mapping_list += self.get(
                     SearchQueryModel(
                     db,
                     search_column=[UserBIFolder.bi_folder_id,UserBIFolder.agent_instance_user_id,
                     UserBIFolder.bi_report_count],
-                    filters=[UserBIFolder.agent_instance_user_id.in_(limited_agent_instance_user_id_set)],
+                    filters=[UserBIFolder.agent_instance_user_id.in_(limited_agent_instance_user_id_list)],
                     )
                 )
             

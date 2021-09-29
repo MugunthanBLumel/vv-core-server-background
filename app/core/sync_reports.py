@@ -10,7 +10,7 @@ from app.api.api_v2.endpoints.user.report_response import get_reports
 from app.schemas.bi_report import AgentReports
 from app.schemas.bi_folder import AgentFolders, BIFolderCreate
 from app.models.user_bi_folder import UserBIFolder
-from app.schemas.report_sync import ExistingFolder, ExistingReport, IncomingFolder, IncomingReport, InsertFolders
+from app.schemas.report_sync import ExistingFolder, ExistingReport, FolderReportCountUpdate, IncomingFolder, IncomingReport, InsertFolders
 
 from app.crud.crud_bi_folder import bi_folder
 
@@ -34,31 +34,29 @@ class SyncReports():
         self.sync_id: int = random.randrange(1,10000000)
         self.db = ScopedSession()
 
-        self.agent_instance_user_id_set: set[int] = []
+        self.agent_instance_user_id_list: list[int] = []
         self.incoming_report_map: dict[str,IncomingReport] = {}
         self.incoming_folder_map: dict[str, IncomingFolder] = {}
         self.existing_report_map: dict[str, ExistingReport] = {}
         self.existing_folder_map: dict[str, ExistingFolder] = {}
         
         self.reports_to_be_inserted:List[str] = [] # list(report_guid)
-        
         self.reports_to_be_updated:List[int] = [] # list(report_id's)
-       
-        self.folders_to_be_inserted:dict[int,List[str]] = {} # depth: list of folder guid
-        
         self.reports_to_be_deleted:List[int] = [] # list(report_id's)
-        self.report_user_mapping_to_be_deleted: dict[int,List[int]] = {} # agent_instance_user_id: list(report id's)
         self.folders_to_be_deleted:List[int] = [] # list(folder_id's)
-        self.folder_user_mapping_to_be_deleted: dict[int,List[int]] = {} # agent_instance_user_id: list(folder id's)
         
+        self.folders_to_be_inserted:dict[int,List[str]] = {} # depth: list of folder guid
+        self.report_user_mapping_to_be_deleted: dict[int,List[int]] = {} # agent_instance_user_id: list(report id's)
+        self.folder_user_mapping_to_be_deleted: dict[int,List[int]] = {} # agent_instance_user_id: list(folder id's)
         self.report_user_mapping_to_be_inserted: dict[int,List[str]] = {} # agent_instance_user_id: list(report guid)
         self.folder_user_mapping_to_be_inserted: dict[int,List[int]] = {} # agent_instance_user_id: list(folder guid)
-        self.folder_user_report_count_update: dict[int,dict[int,int]] = {} # folder_id: agent_instance_id:new report count
-        self.instance_user_resource_to_be_deleted : set[int] = set()
+        # self.folder_user_report_count_update: dict[int,dict[int,int]] = {} # folder_id: agent_instance_id:new report count
+        self.folder_user_report_count_update: List[FolderReportCountUpdate] = [] # folder_id: agent_instance_id:new report count
 
         
     def generate_incoming_report_folder_aggregate(self,*, incoming_report_details: List[Tuple[int,dict]]) -> None:
-        
+        print("0")
+        t1=time()
         incoming_report_map: dict[str,IncomingReport] = {}
         incoming_folder_map: dict[str,IncomingFolder] = {}
         for agent_instance_user_id,incoming_reports in incoming_report_details:
@@ -66,7 +64,7 @@ class SyncReports():
                 incoming_report_guid: str = sha1( "_".join([incoming_report['report_id'], str(self.agent_instance_id) , incoming_report['path'] ]).encode()).hexdigest()
                 incoming_report_obj: IncomingReport = incoming_report_map.get(incoming_report_guid)
                 if  incoming_report_obj :
-                    incoming_report_obj.agent_instance_users.add(agent_instance_user_id)
+                    incoming_report_obj.agent_instance_users.append(agent_instance_user_id)
                 else:
                     meta: str = json.dumps(incoming_report["meta"])
                     sync_meta: str = json.dumps(incoming_report["sync_metadata"])
@@ -81,7 +79,7 @@ class SyncReports():
                             path=incoming_report["path"],
                             meta=meta,
                             sync_metadata=sync_meta,
-                            agent_instance_users=set([agent_instance_user_id]),
+                            agent_instance_users=[agent_instance_user_id],
                             guid=incoming_report_guid,
                             source_folder_guid = sha1( "_".join([str(self.agent_instance_id), incoming_report["path"]]).encode()).hexdigest() ,
                             update_hash = update_hash
@@ -104,13 +102,13 @@ class SyncReports():
                             agent_instance_id=self.agent_instance_id,
                             depth=depth,
                             guid = guid,
-                            agent_instance_users=set([agent_instance_user_id]),
+                            agent_instance_users=[agent_instance_user_id],
                             user_report_count_map= {agent_instance_user_id: user_report_count},
                             source_folder_guid=source_folder_guid
 
                         )
                     else:
-                        folder.agent_instance_users.add(agent_instance_user_id) 
+                        folder.agent_instance_users.append(agent_instance_user_id) 
                         if index == 0:
                             folder.user_report_count_map[agent_instance_user_id] = folder.user_report_count_map.get(agent_instance_user_id,0)+1 
                         else:
@@ -118,7 +116,8 @@ class SyncReports():
         
         self.incoming_report_map = incoming_report_map
         self.incoming_folder_map = incoming_folder_map
-
+        t2=time()
+        print("report,folder aggregate",t2-t1)
     def generate_existing_report_aggregate(self) -> None:
         print("*1")
         t1=time()
@@ -128,7 +127,7 @@ class SyncReports():
             existing_report_list: List[AgentReports] = bi_report.get_reports_by_agent_id(db,agent_instance_id=self.agent_instance_id)
         else:
             existing_report_list: List[AgentReports] = bi_report.get_reports_by_agent_instance_user_id(db,agent_instance_user_id=self.agent_instance_user_id)
-        # report_user_mapping_list: List[UserBIReport] = user_bi_report.get_bi_report_user_mapping(db,agent_instance_user_id_set=self.agent_instance_user_id_set)    
+        # report_user_mapping_list: List[UserBIReport] = user_bi_report.get_bi_report_user_mapping(db,agent_instance_user_id_list=self.agent_instance_user_id_list)    
         
         #     report_hash: str = report.reportid_agentid_path_hash
         #     existing_report_obj: ExistingReport = existing_report_map.get(report_hash)
@@ -146,11 +145,11 @@ class SyncReports():
                     path= report.path,
                     guid = report.guid,
                     update_hash = report.update_hash,
-                    agent_instance_users = set([report.agent_instance_user_id])
+                    agent_instance_users = [report.agent_instance_user_id]
 
                 )
             else:
-                existing_report_obj.agent_instance_users.add(report.agent_instance_user_id)
+                existing_report_obj.agent_instance_users.append(report.agent_instance_user_id)
        
         # report_user_map:dict = {}
         # for report_user in report_user_mapping_list:
@@ -194,16 +193,16 @@ class SyncReports():
                 existing_folder_map[folder.guid] = ExistingFolder(
                         idx = folder.idx,
                         guid = folder.guid,
-                        agent_instance_users=set([folder.agent_instance_user_id]),
+                        agent_instance_users=[folder.agent_instance_user_id],
                         user_report_count_map= {folder.agent_instance_user_id:folder.bi_report_count}
 
                     )
             else:
-                existing_folder_obj.agent_instance_users.add(folder.agent_instance_user_id)
+                existing_folder_obj.agent_instance_users.append(folder.agent_instance_user_id)
                 existing_folder_obj.user_report_count_map[folder.agent_instance_user_id] = folder.bi_report_count
             
         
-        # user_folder_mapping_list: List[UserBIFolder] = user_bi_folder.get_bi_folder_user_mapping(self.db,agent_instance_user_id_set=self.agent_instance_user_id_set)
+        # user_folder_mapping_list: List[UserBIFolder] = user_bi_folder.get_bi_folder_user_mapping(self.db,agent_instance_user_id_list=self.agent_instance_user_id_list)
         # user_folder_map: dict = {}
         
         # for user_folder_mapping in user_folder_mapping_list:
@@ -232,9 +231,9 @@ class SyncReports():
         
     def add_folder_user_mapping(self,incoming_folder: IncomingFolder,existing_folder: Optional[ExistingFolder]=None):
         if existing_folder:
-            folder_users_to_be_added: set[int] = incoming_folder.agent_instance_users - existing_folder.agent_instance_users
+            folder_users_to_be_added: list[int] = list(set(incoming_folder.agent_instance_users) - set(existing_folder.agent_instance_users))
         else:
-            folder_users_to_be_added: set[int] = incoming_folder.agent_instance_users
+            folder_users_to_be_added: list[int] = incoming_folder.agent_instance_users
         
         for agent_instance_user_id in folder_users_to_be_added:
             if agent_instance_user_id in self.folder_user_mapping_to_be_inserted:
@@ -244,9 +243,9 @@ class SyncReports():
     
     def add_report_user_mapping(self,*, incoming_report: IncomingReport, existing_report: Optional[ExistingReport]=None):
         if existing_report:
-            report_users_to_be_added: set[int] = incoming_report.agent_instance_users - existing_report.agent_instance_users
+            report_users_to_be_added: list[int] = list(set(incoming_report.agent_instance_users) - set(existing_report.agent_instance_users))
         else:
-            report_users_to_be_added: set[int] = incoming_report.agent_instance_users
+            report_users_to_be_added: list[int] = incoming_report.agent_instance_users
         for agent_instance_user_id in report_users_to_be_added:
             if agent_instance_user_id in self.report_user_mapping_to_be_inserted:
                 self.report_user_mapping_to_be_inserted[agent_instance_user_id].append(incoming_report.guid)
@@ -255,9 +254,9 @@ class SyncReports():
     
     def remove_report_user_mapping(self,  existing_report: ExistingReport, incoming_report: Optional[IncomingReport] =None):
         if incoming_report:
-            report_users_to_be_deleted: set[int] = existing_report.agent_instance_users - incoming_report.agent_instance_users
+            report_users_to_be_deleted: List[int] = list(set(existing_report.agent_instance_users) - set(incoming_report.agent_instance_users))
         else:
-            report_users_to_be_deleted: set[int] = existing_report.agent_instance_users
+            report_users_to_be_deleted: List[int] = existing_report.agent_instance_users
         for agent_instance_user_id in report_users_to_be_deleted:
             if agent_instance_user_id in self.report_user_mapping_to_be_deleted:
                 self.report_user_mapping_to_be_deleted[agent_instance_user_id].append(existing_report.idx)
@@ -269,9 +268,9 @@ class SyncReports():
 
     def remove_folder_user_mapping(self, existing_folder: ExistingFolder, incoming_folder: Optional[IncomingFolder] = None):
         if incoming_folder:
-            folder_users_to_be_deleted: set[int] = existing_folder.agent_instance_users - incoming_folder.agent_instance_users
+            folder_users_to_be_deleted: List[int] = list(set(existing_folder.agent_instance_users) - set(incoming_folder.agent_instance_users))
         else:
-            folder_users_to_be_deleted: set[int] = existing_folder.agent_instance_users
+            folder_users_to_be_deleted: List[int] = existing_folder.agent_instance_users
         for agent_instance_user_id in folder_users_to_be_deleted:
             if agent_instance_user_id in self.folder_user_mapping_to_be_deleted:
                 self.folder_user_mapping_to_be_deleted[agent_instance_user_id].append(existing_folder.idx)
@@ -423,14 +422,44 @@ class SyncReports():
             self.remove_folder_user_mapping(existing_folder=existing_folder)
             if self.is_admin_sync:
                 self.folders_to_be_deleted.append(existing_folder.idx)
-        
-    
+
+    def delete_folder_user_mapping(self):
+        delete_folder_user_list = []
+        for folder_id in self.folders_to_be_deleted:
+            delete_folder_user_list.append(
+                {
+                    "idx": folder_id,
+                    "status": codes.DELETED
+                }
+            )
+        self.db = bi_folder.delete_folders(self.db,folder_list=delete_folder_user_list)    
+    def delete_folders(self):
+        delete_folder_list = []
+        for folder_id in self.folders_to_be_deleted:
+            delete_folder_list.append(
+                {
+                    "idx": folder_id,
+                    "status": codes.DELETED
+                }
+            )
+        self.db = bi_folder.delete_folders(self.db,folder_list=delete_folder_list)
+
+    def delete_reports(self):
+        delete_report_list = []
+        for report_id in self.reports_to_be_deleted:
+            delete_report_list.append(
+                {
+                    "idx": report_id,
+                    "status": codes.DELETED
+                }
+            )
+        self.db = bi_report.delete_reports(self.db,folder_list=delete_report_list)
 
     def sync_agent_reports(self): 
         
-        self.agent_instance_user_id_set = agent_instance_user.get_agent_instance_user_list(self.db, agent_instance_id =self.agent_instance_id)
-        print(len(self.agent_instance_user_id_set))
-        # self.generate_incoming_report_folder_aggregate(incoming_report_details=get_reports(agent_instance_user_id_set=[1,4],bi_report_count=1)) 
+        self.agent_instance_user_id_list = agent_instance_user.get_agent_instance_user_list(self.db, agent_instance_id =self.agent_instance_id)
+        print(len(self.agent_instance_user_id_list))
+        self.generate_incoming_report_folder_aggregate(incoming_report_details=get_reports(agent_instance_user_id_list=self.agent_instance_user_id_list,bi_report_count=10)) 
       
         
         # worker: Worker = Worker(worker_count=2)
@@ -461,11 +490,14 @@ class SyncReports():
                 folder_report_count_update = set(existing_folder.user_report_count_map.items()) - set(incoming_folder.user_report_count_map.items())
                 for agent_instance_user_id,existing_report_count in folder_report_count_update:
                     updated_report_count: int = incoming_folder.user_report_count_map.get(agent_instance_user_id,0)
-                    if existing_folder.idx not in self.folder_user_report_count_update:
-                        self.folder_user_report_count_update[existing_folder.idx] = {agent_instance_user_id:updated_report_count }
-                    else:
-                        self.folder_user_report_count_update[existing_folder.idx][agent_instance_user_id] = updated_report_count 
-                
+                    self.folder_user_report_count_update.append(
+                        FolderReportCountUpdate(
+                            agent_instance_user_id = agent_instance_user_id,
+                            bi_folder_id = existing_folder.idx,
+                            bi_report_count = updated_report_count
+                        )
+                    )
+                  
                 self.add_folder_user_mapping(incoming_folder=incoming_folder,existing_folder=existing_folder)
                 self.remove_folder_user_mapping(incoming_folder=incoming_folder,existing_folder=existing_folder)
                 pass
@@ -475,14 +507,15 @@ class SyncReports():
                 self.add_folder(incoming_folder=incoming_folder)
         
         
-
         self.remove_folders()
         self.remove_reports()
         
-        folder_guid_id_map: dict[str,int] = self.insert_folders()
-        self.insert_folder_users(folder_guid_id_map = folder_guid_id_map)
-        report_guid_id_map: dict[str,int] = self.insert_reports(folder_guid_id_map=folder_guid_id_map)
-        self.insert_report_users(report_guid_id_map = report_guid_id_map)
+
+        
+        # folder_guid_id_map: dict[str,int] = self.insert_folders()
+        # self.insert_folder_users(folder_guid_id_map = folder_guid_id_map)
+        # report_guid_id_map: dict[str,int] = self.insert_reports(folder_guid_id_map=folder_guid_id_map)
+        # self.insert_report_users(report_guid_id_map = report_guid_id_map)
         
         
         print("reports:",len(self.reports_to_be_inserted))

@@ -13,8 +13,7 @@ from app.crud.crud_user_bi_folder import user_bi_folder
 
 
 class CRUDBIFolder(CRUDBase[BIFolder, BIFolderCreate, BIFolderUpdate]):
-    def create_folders(self,db,folder_list: List[dict]):
-        return self.batch_insert(db,obj_in = folder_list)
+   
     
     def get_folders_by_agent_id(
         self,
@@ -82,5 +81,12 @@ class CRUDBIFolder(CRUDBase[BIFolder, BIFolderCreate, BIFolderUpdate]):
             ]
         )
         return self.get(folder_search)
+    
+    def create_folders(self,db,folder_list: List[dict]):
+        return self.batch_insert(db,obj_in = folder_list)
+
+    def delete_folders(self,db,folder_list: List[dict]):
+        return self.batch_update(db,obj_in=folder_list)
+    
 
 bi_folder = CRUDBIFolder(BIFolder)

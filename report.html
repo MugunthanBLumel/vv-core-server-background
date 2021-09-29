@@ -40,9 +40,9 @@
             <li><a target="_blank" href="https://github.com/inconshreveable/sqltap">Code</a></li>
           </ul>
           <p id="total-time" class="navbar-text">
-            <span class="count">1</span> queries spent
-            <span class="sum">14.90</span> seconds
-            over <span class="sum">14.90</span> seconds of profiling
+            <span class="count">3</span> queries spent
+            <span class="sum">13.55</span> seconds
+            over <span class="sum">32.02</span> seconds of profiling
           </p>
           
         </div>
@@ -57,15 +57,45 @@
               <a href="#query-0" data-toggle="tab">
                 <span class="label label-default pull-right"
                       style="margin-right: 5px; width: 8ex; text-align: right;">
-                    99999r
+                    1190002r
                 </span>
                 <span class="label label-warning pull-right" style="margin-right: 5px;">
-                    14.902s
+                    6.971s
                 </span>
                 <span class="label label-info pull-right" style="margin-right: 5px;">
                   1q
                 </span>
-UPDATE
+SELECT
+              </a>
+            </li>
+            <li class="">
+              <a href="#query-1" data-toggle="tab">
+                <span class="label label-default pull-right"
+                      style="margin-right: 5px; width: 8ex; text-align: right;">
+                    1103204r
+                </span>
+                <span class="label label-warning pull-right" style="margin-right: 5px;">
+                    6.536s
+                </span>
+                <span class="label label-info pull-right" style="margin-right: 5px;">
+                  1q
+                </span>
+SELECT
+              </a>
+            </li>
+            <li class="">
+              <a href="#query-2" data-toggle="tab">
+                <span class="label label-default pull-right"
+                      style="margin-right: 5px; width: 8ex; text-align: right;">
+                    30003r
+                </span>
+                <span class="label label-warning pull-right" style="margin-right: 5px;">
+                    0.039s
+                </span>
+                <span class="label label-info pull-right" style="margin-right: 5px;">
+                  1q
+                </span>
+SELECT
               </a>
             </li>
           </ul>
@@ -73,7 +103,7 @@ UPDATE
           <hr />
 
             <div>
-            <span>Report Generated: 2021-09-28 22:34:30</span>
+            <span>Report Generated: 2021-09-29 14:11:00</span>
           </div>
         </div>
 
@@ -91,49 +121,42 @@ UPDATE
                     </li>
                     <li>
                       <dt>Row Count</dt>
-                      <dd>99999</dd>
+                      <dd>1190002</dd>
                     </li>
                     <li>
                       <dt>Total Time</dt>
-                      <dd>14.902</dd>
+                      <dd>6.971</dd>
                     </li>
                     <li>
                       <dt>Mean</dt>
-                      <dd>14.902</dd>
+                      <dd>6.971</dd>
                     </li>
                     <li>
                       <dt>Median</dt>
-                      <dd>14.902</dd>
+                      <dd>6.971</dd>
                     </li>
                     <li>
                       <dt>Min</dt>
-                      <dd>14.902</dd>
+                      <dd>6.971</dd>
                     </li>
                     <li>
                       <dt>Max</dt>
-                      <dd>14.902</dd>
+                      <dd>6.971</dd>
                     </li>
                   </ul>
               </h4>
 
               <hr />
-              <pre><code class="sql">UPDATE bi_report
-SET id=%s,
-    name=%s,
-    agent_instance_id=%s,
-    bi_folder_id=%s,
-    path=%s,
-         url=%s,
-         description=%s,
-         guid=%s,
-         update_hash=%s,
-         sync_id=%s,
-         status=%s,
-         created_by=%s,
-         updated_by=%s,
-         created_at=%s,
-         updated_at=%s
-WHERE bi_report.id = %s</code></pre>
+              <pre><code class="sql">SELECT bi_report.id AS bi_report_id,
+       bi_report.path AS bi_report_path,
+       bi_report.guid AS bi_report_guid,
+       bi_report.update_hash AS bi_report_update_hash,
+       user_bi_report.agent_instance_user_id AS user_bi_report_agent_instance_user_id
+FROM bi_report
+INNER JOIN user_bi_report ON bi_report.id = user_bi_report.bi_report_id
+AND bi_report.agent_instance_id = %s
+AND user_bi_report.status != %s
+WHERE bi_report.status != %s</code></pre>
               <hr />
 
               
@@ -143,17 +166,19 @@ WHERE bi_report.id = %s</code></pre>
               <table class="table">
                 <tr>
                   <th>Query Time</th>
-                  <th><code>bi_report_id</code></th>
-                  <th><code>sync_id</code></th>
+                  <th><code>agent_instance_id_1</code></th>
+                  <th><code>status_1</code></th>
+                  <th><code>status_2</code></th>
                   <th>Row Count</th>
                   <th>Params ID</th>
                 </tr>
                 <tr class="">
-                    <td>14.902</td>
-                    <td>99999</td>
+                    <td>6.971</td>
                     <td>1</td>
-                    <td>99999</td>
-                    <td>2</td>
+                    <td>500</td>
+                    <td>500</td>
+                    <td>1190002</td>
+                    <td>10</td>
                 </tr>
               </table>
 
@@ -169,9 +194,9 @@ WHERE bi_report.id = %s</code></pre>
                     <h5>
                       1
                       call
-                      (Params ID: 2) with
+                      (Params ID: 10) with
                       <tt>
-                        bi_report_id=99999, sync_id=1
+                        agent_instance_id_1=1, status_1=500, status_2=500
                       </tt>
                     </h5>
                   </li>
@@ -191,7 +216,7 @@ WHERE bi_report.id = %s</code></pre>
                       
                       1
                       call from
-                      <strong>bulk_core_update</strong> @sync\src\app\api\api_v2\endpoints\user\report_sync.py:31
+                      <strong>get</strong> @sync\src\app\crud\base.py:72
                       </h5>
                     </a>
                     <pre class="trace hidden"><code class="python">File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\threading.py&#34;, line 912, in _bootstrap
@@ -204,18 +229,308 @@ WHERE bi_report.id = %s</code></pre>
     work_item.run()
   File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\concurrent\futures\thread.py&#34;, line 52, in run
     result = self.fn(*self.args, **self.kwargs)
-  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\api\api_v2\endpoints\user\report_sync.py&#34;, line 42, in report_sync
-    bulk_core_update(obj_in=obj_in)
-  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\api\api_v2\endpoints\user\report_sync.py&#34;, line 31, in bulk_core_update
-    db.bulk_update_mappings(BIReport,
-  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\session.py&#34;, line 2932, in bulk_update_mappings
-    self._bulk_save_mappings(
-  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\session.py&#34;, line 2952, in _bulk_save_mappings
-    persistence._bulk_update(
-  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\persistence.py&#34;, line 173, in _bulk_update
-    _emit_update_statements(
-  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\persistence.py&#34;, line 994, in _emit_update_statements
-    c = cached_connections[connection].execute(
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\api\api_v2\endpoints\user\report_sync.py&#34;, line 84, in report_sync
+    SyncReports(db).sync_agent_reports()
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\core\sync_reports.py&#34;, line 469, in sync_agent_reports
+    self.generate_existing_report_aggregate()
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\core\sync_reports.py&#34;, line 127, in generate_existing_report_aggregate
+    existing_report_list: List[AgentReports] = bi_report.get_reports_by_agent_id(db,agent_instance_id=self.agent_instance_id)
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\crud\crud_bi_report.py&#34;, line 36, in get_reports_by_agent_id
+    return cast(List[BIReport],self.get(report_search))
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\crud\base.py&#34;, line 72, in get
+    result = self.query.all()
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3373, in all
+    return list(self)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3535, in __iter__
+    return self._execute_and_instances(context)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3560, in _execute_and_instances
+    result = conn.execute(querycontext.statement, self._params)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\engine\base.py&#34;, line 1011, in execute
+    return meth(self, multiparams, params)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\sql\elements.py&#34;, line 298, in _execute_on_connection
+    return connection._execute_clauseelement(self, multiparams, params)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\engine\base.py&#34;, line 1133, in _execute_clauseelement
+    self.dispatch.after_execute(self, elem, multiparams, params, ret)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\event\attr.py&#34;, line 322, in __call__
+    fn(*args, **kw)</code></pre>
+                  </li>
+              </ul>
+            </div>
+
+            <!-- ================================================== -->
+
+            <div id="query-1" class="tab-pane ">
+              <h4 class="toggle">
+                  <ul class="list-inline">
+                    <li>
+                      <dt>Query Count</dt>
+                      <dd>1</dd>
+                    </li>
+                    <li>
+                      <dt>Row Count</dt>
+                      <dd>1103204</dd>
+                    </li>
+                    <li>
+                      <dt>Total Time</dt>
+                      <dd>6.536</dd>
+                    </li>
+                    <li>
+                      <dt>Mean</dt>
+                      <dd>6.536</dd>
+                    </li>
+                    <li>
+                      <dt>Median</dt>
+                      <dd>6.536</dd>
+                    </li>
+                    <li>
+                      <dt>Min</dt>
+                      <dd>6.536</dd>
+                    </li>
+                    <li>
+                      <dt>Max</dt>
+                      <dd>6.536</dd>
+                    </li>
+                  </ul>
+              </h4>
+
+              <hr />
+              <pre><code class="sql">SELECT bi_folder.id AS bi_folder_id,
+       bi_folder.guid AS bi_folder_guid,
+       user_bi_folder.agent_instance_user_id AS user_bi_folder_agent_instance_user_id,
+       user_bi_folder.bi_report_count AS user_bi_folder_bi_report_count
+FROM bi_folder
+INNER JOIN user_bi_folder ON bi_folder.id = user_bi_folder.bi_folder_id
+AND bi_folder.agent_instance_id = %s
+AND user_bi_folder.status != %s
+WHERE bi_folder.agent_instance_id = %s
+  AND bi_folder.status != %s</code></pre>
+              <hr />
+
+              
+              <h4>
+                Query Breakdown
+              </h4>
+              <table class="table">
+                <tr>
+                  <th>Query Time</th>
+                  <th><code>agent_instance_id_1</code></th>
+                  <th><code>agent_instance_id_2</code></th>
+                  <th><code>status_1</code></th>
+                  <th><code>status_2</code></th>
+                  <th>Row Count</th>
+                  <th>Params ID</th>
+                </tr>
+                <tr class="">
+                    <td>6.536</td>
+                    <td>1</td>
+                    <td>1</td>
+                    <td>500</td>
+                    <td>500</td>
+                    <td>1103204</td>
+                    <td>12</td>
+                </tr>
+              </table>
+
+              <hr />
+              
+              <h4>
+                  1 unique parameter
+                      set is
+                  supplied.
+              </h4>
+              <ul class="details">
+                  <li class="">
+                    <h5>
+                      1
+                      call
+                      (Params ID: 12) with
+                      <tt>
+                        agent_instance_id_1=1, agent_instance_id_2=1, status_1=500, status_2=500
+                      </tt>
+                    </h5>
+                  </li>
+              </ul>
+
+              <hr />
+              
+              <h4>
+                  1 unique
+                      stack issues
+                  this query
+              </h4>
+              <ul class="details">
+                  <li>
+                    <a class="toggle">
+                      <h5>
+                      
+                      1
+                      call from
+                      <strong>get</strong> @sync\src\app\crud\base.py:72
+                      </h5>
+                    </a>
+                    <pre class="trace hidden"><code class="python">File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\threading.py&#34;, line 912, in _bootstrap
+    self._bootstrap_inner()
+  File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\threading.py&#34;, line 954, in _bootstrap_inner
+    self.run()
+  File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\threading.py&#34;, line 892, in run
+    self._target(*self._args, **self._kwargs)
+  File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\concurrent\futures\thread.py&#34;, line 77, in _worker
+    work_item.run()
+  File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\concurrent\futures\thread.py&#34;, line 52, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\api\api_v2\endpoints\user\report_sync.py&#34;, line 84, in report_sync
+    SyncReports(db).sync_agent_reports()
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\core\sync_reports.py&#34;, line 470, in sync_agent_reports
+    self.generate_existing_folder_aggregate()
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\core\sync_reports.py&#34;, line 183, in generate_existing_folder_aggregate
+    existing_folder_list: List[AgentFolders] = bi_folder.get_folders_by_agent_id(self.db,agent_instance_id=self.agent_instance_id)
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\crud\crud_bi_folder.py&#34;, line 49, in get_folders_by_agent_id
+    return cast(List[AgentFolders],self.get(folder_search))
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\crud\base.py&#34;, line 72, in get
+    result = self.query.all()
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3373, in all
+    return list(self)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3535, in __iter__
+    return self._execute_and_instances(context)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3560, in _execute_and_instances
+    result = conn.execute(querycontext.statement, self._params)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\engine\base.py&#34;, line 1011, in execute
+    return meth(self, multiparams, params)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\sql\elements.py&#34;, line 298, in _execute_on_connection
+    return connection._execute_clauseelement(self, multiparams, params)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\engine\base.py&#34;, line 1133, in _execute_clauseelement
+    self.dispatch.after_execute(self, elem, multiparams, params, ret)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\event\attr.py&#34;, line 322, in __call__
+    fn(*args, **kw)</code></pre>
+                  </li>
+              </ul>
+            </div>
+
+            <!-- ================================================== -->
+
+            <div id="query-2" class="tab-pane ">
+              <h4 class="toggle">
+                  <ul class="list-inline">
+                    <li>
+                      <dt>Query Count</dt>
+                      <dd>1</dd>
+                    </li>
+                    <li>
+                      <dt>Row Count</dt>
+                      <dd>30003</dd>
+                    </li>
+                    <li>
+                      <dt>Total Time</dt>
+                      <dd>0.039</dd>
+                    </li>
+                    <li>
+                      <dt>Mean</dt>
+                      <dd>0.039</dd>
+                    </li>
+                    <li>
+                      <dt>Median</dt>
+                      <dd>0.039</dd>
+                    </li>
+                    <li>
+                      <dt>Min</dt>
+                      <dd>0.039</dd>
+                    </li>
+                    <li>
+                      <dt>Max</dt>
+                      <dd>0.039</dd>
+                    </li>
+                  </ul>
+              </h4>
+
+              <hr />
+              <pre><code class="sql">SELECT agent_instance_user.id AS agent_instance_user_id
+FROM agent_instance_user
+WHERE agent_instance_user.agent_instance_id = %s
+  AND agent_instance_user.status != %s</code></pre>
+              <hr />
+
+              
+              <h4>
+                Query Breakdown
+              </h4>
+              <table class="table">
+                <tr>
+                  <th>Query Time</th>
+                  <th><code>agent_instance_id_1</code></th>
+                  <th><code>status_1</code></th>
+                  <th>Row Count</th>
+                  <th>Params ID</th>
+                </tr>
+                <tr class="">
+                    <td>0.039</td>
+                    <td>1</td>
+                    <td>500</td>
+                    <td>30003</td>
+                    <td>8</td>
+                </tr>
+              </table>
+
+              <hr />
+              
+              <h4>
+                  1 unique parameter
+                      set is
+                  supplied.
+              </h4>
+              <ul class="details">
+                  <li class="">
+                    <h5>
+                      1
+                      call
+                      (Params ID: 8) with
+                      <tt>
+                        agent_instance_id_1=1, status_1=500
+                      </tt>
+                    </h5>
+                  </li>
+              </ul>
+
+              <hr />
+              
+              <h4>
+                  1 unique
+                      stack issues
+                  this query
+              </h4>
+              <ul class="details">
+                  <li>
+                    <a class="toggle">
+                      <h5>
+                      
+                      1
+                      call from
+                      <strong>get</strong> @sync\src\app\crud\base.py:72
+                      </h5>
+                    </a>
+                    <pre class="trace hidden"><code class="python">File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\threading.py&#34;, line 912, in _bootstrap
+    self._bootstrap_inner()
+  File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\threading.py&#34;, line 954, in _bootstrap_inner
+    self.run()
+  File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\threading.py&#34;, line 892, in run
+    self._target(*self._args, **self._kwargs)
+  File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\concurrent\futures\thread.py&#34;, line 77, in _worker
+    work_item.run()
+  File &#34;c:\users\mugunthanb\appdata\local\programs\python\python39\lib\concurrent\futures\thread.py&#34;, line 52, in run
+    result = self.fn(*self.args, **self.kwargs)
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\api\api_v2\endpoints\user\report_sync.py&#34;, line 84, in report_sync
+    SyncReports(db).sync_agent_reports()
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\core\sync_reports.py&#34;, line 460, in sync_agent_reports
+    self.agent_instance_user_id_list = agent_instance_user.get_agent_instance_user_list(self.db, agent_instance_id =self.agent_instance_id)
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\crud\crud_agent_instance_user.py&#34;, line 33, in get_agent_instance_user_list
+    return [agent_user.idx for agent_user in self.get(agent_instance_users)]
+  File &#34;C:\VisualBi\Bihub_3.0\report sync\src\app\crud\base.py&#34;, line 72, in get
+    result = self.query.all()
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3373, in all
+    return list(self)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3535, in __iter__
+    return self._execute_and_instances(context)
+  File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\orm\query.py&#34;, line 3560, in _execute_and_instances
+    result = conn.execute(querycontext.statement, self._params)
   File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\engine\base.py&#34;, line 1011, in execute
     return meth(self, multiparams, params)
   File &#34;C:\VisualBi\Bihub_3.0\env\lib\site-packages\sqlalchemy\sql\elements.py&#34;, line 298, in _execute_on_connection

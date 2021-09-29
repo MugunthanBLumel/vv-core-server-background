@@ -59,9 +59,7 @@ class CRUDBIReports(CRUDBase[BIReport, BIReportCreate, BIReportUpdate]):
         )
         return cast(List[AgentReports],self.get(report_search))
 
-    def create_reports(self,db, report_list: List[BIReport]) -> Session:
-        self.batch_insert(db,obj_in=report_list)
-        return db
+    
 
     def get_reports_by_sync_id(self,db: Session,*, sync_id: int) -> List[BIReport]:
         report_search: SearchQueryModel = SearchQueryModel(
@@ -72,4 +70,12 @@ class CRUDBIReports(CRUDBase[BIReport, BIReportCreate, BIReportUpdate]):
             ]
         )
         return self.get(report_search)
+    
+    def create_reports(self,db, report_list: List[BIReport]) -> Session:
+        self.batch_insert(db,obj_in=report_list)
+        return db
+
+    def delete_reports(self,db,report_list: List[dict]):
+        return self.batch_update(db,obj_in=report_list)
+    
 bi_report = CRUDBIReports(BIReport)

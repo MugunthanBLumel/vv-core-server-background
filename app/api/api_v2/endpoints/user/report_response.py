@@ -1,7 +1,7 @@
 import json
 import random
 
-def get_reports(agent_instance_user_id_set=[1],bi_report_count=20):
+def get_reports(agent_instance_user_id_list=[1],bi_report_count=20):
    result = []
    reports = json.loads('''{
          "user_metadata":{
@@ -403,17 +403,17 @@ def get_reports(agent_instance_user_id_set=[1],bi_report_count=20):
             }
          ]
       }''' ,strict=False)
-   for agent_instance_user_id in agent_instance_user_id_set:
+   for agent_instance_user_id in agent_instance_user_id_list:
       report_list=[]
       for report_id in range(bi_report_count):
          id = random.randrange(1,10000000)
-         #random_report = random.choice(reports["reports"])
-         random_report = reports["reports"][report_id]
+         random_report = random.choice(reports["reports"])
+         # random_report = reports["reports"][report_id]
          report_copy = random_report.copy()
-         # report_copy["name"]+=f"_{id}"
-         # report_copy["report_id"]+=f"_{id}"
-         # if random.randrange(1,6) ==3 :
-         #    report_copy["path"]+=f"_{id}//"
+         report_copy["name"]+=f"_{id}"
+         report_copy["report_id"]+=f"_{id}"
+         if random.randrange(1,6) ==3 :
+            report_copy["path"]+=f"_{id}//"
          report_list.append((report_copy))
       result.append((agent_instance_user_id,report_list))
    
