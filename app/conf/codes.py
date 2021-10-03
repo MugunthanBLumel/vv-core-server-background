@@ -13,6 +13,8 @@ def DEFAULT_TIME() -> int:
     """
     return int(datetime.now(tz=timezone.utc).timestamp())
 
+path_delimiter: str = "//"
+
 ITEM_TYPE_MAP: Dict[str, int] = {
     "user_folder": 1,
     "user_custom_url": 2,
@@ -25,14 +27,19 @@ ITEM_TYPE_MAP: Dict[str, int] = {
 ENABLED: int = 10
 DISABLED: int = 20
 DELETED: int = 500
-path_delimiter = "//"
-FOLDER_ROOT_LEVEL_DEPTH = 1
-DEFAULT_WORKER_COUNT = 5
-DEAD_LOCK_RETRY_LIMIT = 3
 
-SYNC_STATUS = {
+FOLDER_ROOT_LEVEL_DEPTH: int = 1
+DEFAULT_WORKER_COUNT: int = 5
+DEAD_LOCK_RETRY_LIMIT: int = 3
+
+SYNC_STATUS: dict[str,int] = {
     "idle": 50,
     "started": 100,
     "success": 150,
     "failed": 500
+}
+
+SYNC_TYPE: dict[str,int] = {
+    "admin_sync": 1,
+    "user_sync": 2
 }
