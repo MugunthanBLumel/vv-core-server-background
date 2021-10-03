@@ -35,5 +35,7 @@ class CRUDUserBIReport(CRUDBase[UserBIReport, UserBIReportCreate, UserBIReportUp
     
     def insert_report_users(self,db, report_user_list: List[UserBIReport]) -> ScopedSession:
         return self.batch_insert(db,obj_in=report_user_list)
-
+        
+    def delete_report_users(self,db,report_user_list: List[dict]):
+        return self.batch_update(db,obj_in=report_user_list)
 user_bi_report = CRUDUserBIReport(UserBIReport)

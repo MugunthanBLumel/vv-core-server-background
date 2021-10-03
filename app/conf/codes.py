@@ -28,3 +28,11 @@ DELETED: int = 500
 path_delimiter = "//"
 FOLDER_ROOT_LEVEL_DEPTH = 1
 DEFAULT_WORKER_COUNT = 5
+DEAD_LOCK_RETRY_LIMIT = 3
+
+SYNC_STATUS = {
+    "idle": 50,
+    "started": 100,
+    "success": 150,
+    "failed": 500
+}

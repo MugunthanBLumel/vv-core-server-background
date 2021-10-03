@@ -19,7 +19,6 @@ class BIReport(Base):
     description = Column(DatabaseHelper.get_char_seq_type(), nullable=True)
     guid = Column(String(50), nullable=False)
     update_hash = Column(String(50), nullable=False)
-    sync_id = Column(Integer, nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
     created_by = Column(Integer, nullable=False)
     updated_by = Column(Integer, nullable=False)

@@ -19,7 +19,6 @@ class BIFolder(Base):
     agent_instance_id = Column(Integer, ForeignKey("agent_instance.id"), nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
     guid = Column(String(50), nullable=False)
-    sync_id = Column(Integer, nullable=False)
     created_by = Column(Integer, nullable=False)
     updated_by = Column(Integer, nullable=False)
     created_at = Column(Integer, nullable=False, default=codes.DEFAULT_TIME())

@@ -36,4 +36,10 @@ class CRUDUserBIFolder(CRUDBase[UserBIFolder, UserBIFolderCreate, UserBIFolderUp
 
     def insert_folder_users(self,db, folder_user_list: List[UserBIFolder]) -> Session:
         return self.batch_insert(db,obj_in=folder_user_list)
+
+    def delete_folder_users(self,db,folder_user_list: List[dict]):
+        return self.batch_update(db,obj_in=folder_user_list)
+
+    def update_folder_users(self,db,folder_user_list: List[dict]):
+        return self.batch_update(db,obj_in=folder_user_list)
 user_bi_folder = CRUDUserBIFolder(UserBIFolder)

@@ -14,7 +14,6 @@ class BIFolderCreate(BaseModel):
     agent_instance_id: int
     depth: int 
     guid: int
-    sync_id: int
     
 class BIFolderUpdate(BaseModel):
     pass
