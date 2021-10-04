@@ -1,4 +1,5 @@
 from loguru import logger
+from app.core.exception import HTTP500Exception
 from app.models.bi_folder import BIFolder
 from app.models.bi_report import BIReport
 import re
@@ -31,6 +32,10 @@ from app.core.worker import Worker
 from app.schemas.sync_log import SyncLogCreate,SyncLogUpdate
 from app.crud.crud_sync_log import sync_log
 from app.crud.crud_sync_reports_log import sync_reports_log
+from app.crud.crud_item_tag import item_tag
+from app.crud.crud_user_favorite import user_favorite
+from app.crud.crud_user_report import user_report
+from app.crud.crud_user_history import user_history
 from app.models.sync_log import SyncLog
 from sqlalchemy import func
 class SyncReports():
@@ -64,8 +69,9 @@ class SyncReports():
         self.folder_user_mapping_to_be_inserted: dict[int,List[int]] = {} # agent_instance_user_id: list(folder guid)
         self.folder_user_report_count_update: List[FolderReportCountUpdate] = [] # folder_id: agent_instance_id:new report count
         
-        self.insert_sync_reports_log: dict[int, dict] = {}
-        self.update_sync_reports_log: dict[int, dict] = {}
+        self.user_report_item_guid_to_be_deleted: List[str] = []
+        self.sync_reports_log_to_be_inserted: dict[int, dict] = {}
+        self.sync_reports_log_to_be_updated: dict[int, dict] = {}
 
     def generate_incoming_report_folder_aggregate(self,*, incoming_report_details: List[Tuple[int,dict]]) -> None:
         incoming_report_map: dict[str,IncomingReport] = {}
@@ -202,17 +208,27 @@ class SyncReports():
             else:
                 self.report_user_mapping_to_be_inserted[agent_instance_user_id] = [incoming_report.guid]
     
+    def remove_user_report_item_mappings(self,agent_instance_user_id: int, bi_report_id: int):
+        user_id: int = self.user_id_agent_instance_user_map[agent_instance_user_id]
+        self.user_report_item_guid_to_be_deleted.append(
+                sha1( "_".join([str(user_id),str(codes.ITEM_TYPE_MAP["bi_report"]),str(bi_report_id) ]).encode()).hexdigest() 
+            )
+    
     def remove_report_user_mapping(self,  existing_report: ExistingReport, incoming_report: Optional[IncomingReport] =None):
         if incoming_report:
             report_users_to_be_deleted: List[int] = list(set(existing_report.agent_instance_user_details) - set(incoming_report.agent_instance_users))
         else:
             report_users_to_be_deleted: List[int] = existing_report.agent_instance_user_details
         
-        for report_user in report_users_to_be_deleted:
-            self.report_user_mapping_to_be_deleted.append(existing_report.agent_instance_user_details[report_user])
+        for agent_instance_user_id in report_users_to_be_deleted:
+            self.report_user_mapping_to_be_deleted.append(existing_report.agent_instance_user_details[agent_instance_user_id])
             
-            self.add_sync_report_log(agent_instance_user_id=report_user,bi_report_id=existing_report.idx,
+            self.add_sync_report_log(agent_instance_user_id=agent_instance_user_id,bi_report_id=existing_report.idx,
             report_sync_status=codes.REPORT_SYNC_STATUS["revoked"])
+            
+            self.remove_user_report_item_mappings(agent_instance_user_id=agent_instance_user_id,
+            bi_report_id=existing_report.idx
+            )
 
     def remove_folder_user_mapping(self, existing_folder: ExistingFolder, incoming_folder: Optional[IncomingFolder] = None):
         if incoming_folder:
@@ -381,39 +397,40 @@ class SyncReports():
 
     def add_sync_report_log(self,agent_instance_user_id: int,bi_report_id: int,report_sync_status: int):
         sync_report_log_id = self.report_id_log_id_map.get(bi_report_id)
+        user_id: int = self.user_id_agent_instance_user_map[agent_instance_user_id]
         if not sync_report_log_id:
-            sync_reports_log_obj: dict = self.insert_sync_reports_log.get(bi_report_id)
+            sync_reports_log_obj: dict = self.sync_reports_log_to_be_inserted.get(bi_report_id)
             if not sync_reports_log_obj:
                 
-                self.insert_sync_reports_log[bi_report_id] = {
+                self.sync_reports_log_to_be_inserted[bi_report_id] = {
                         "sync_log_id":  self.sync_id,
                         "agent_instance_id": self.agent_instance_id,
                         "bi_report_id": bi_report_id,
-                        "user_id_list": f"{agent_instance_user_id},",
+                        "user_id_list": f"{user_id},",
                         "status": report_sync_status,
                         "created_by": self.user_id,
                         "updated_by": self.user_id,
                 
                         }
             else:
-                sync_reports_log_obj["user_id_list"]+= f"{agent_instance_user_id},"
+                sync_reports_log_obj["user_id_list"]+= f"{user_id},"
         else:
-            sync_reports_log_obj: dict = self.update_sync_reports_log.get(bi_report_id)
+            sync_reports_log_obj: dict = self.sync_reports_log_to_be_updated.get(bi_report_id)
             if not sync_reports_log_obj:
-                self.update_sync_reports_log[bi_report_id] = {
+                self.sync_reports_log_to_be_updated[bi_report_id] = {
                     "idx": sync_report_log_id,
-                    "user_id_list":f"{agent_instance_user_id},"
+                    "user_id_list":f"{user_id},"
                     }
             else:
-                sync_reports_log_obj["user_id_list"]+= f"{agent_instance_user_id},"
+                sync_reports_log_obj["user_id_list"]+= f"{user_id},"
 
     def insert_sync_report_logs_db(self):
-        print(self.insert_sync_reports_log,
-        self.update_sync_reports_log)
+        print(self.sync_reports_log_to_be_inserted,
+        self.sync_reports_log_to_be_updated)
         created_at: int = codes.DEFAULT_TIME()
-        if self.insert_sync_reports_log:
+        if self.sync_reports_log_to_be_inserted:
             insert_sync_reports_log_list: list[dict] = []
-            for insert_sync_report in self.insert_sync_reports_log.values():
+            for insert_sync_report in self.sync_reports_log_to_be_inserted.values():
                 insert_sync_report["created_at"] = created_at
                 insert_sync_report["updated_at"] = created_at
                 insert_sync_reports_log_list.append(insert_sync_report)
@@ -426,11 +443,11 @@ class SyncReports():
             for sync_report_log_obj in sync_report_log_list:
                 self.report_id_log_id_map[sync_report_log_obj.bi_report_id] = sync_report_log_obj.idx
        
-        if self.update_sync_reports_log:
-            sync_reports_log.update_user_id_list(self.db,list(self.update_sync_reports_log.values()))
+        if self.sync_reports_log_to_be_updated:
+            sync_reports_log.update_user_id_list(self.db,list(self.sync_reports_log_to_be_updated.values()))
         
-        self.insert_sync_reports_log.clear()
-        self.update_sync_reports_log.clear()
+        self.sync_reports_log_to_be_inserted.clear()
+        self.sync_reports_log_to_be_updated.clear()
 
     
         
@@ -548,6 +565,19 @@ class SyncReports():
         self.db = user_bi_report.delete_report_users(self.db,report_user_list=delete_report_user_list)
         self.report_user_mapping_to_be_deleted.clear()
     
+    def delete_user_report_item_mappings(self):
+        start: int = 0
+        end: int = len(self.user_report_item_guid_to_be_deleted)
+        limit: int = 1000
+        while(start<end):
+            limited_guid_list = self.user_report_item_guid_to_be_deleted[start:start+min(limit,end-start)]
+            user_report.delete_user_report_items(self.db,user_report_item_guid_list=limited_guid_list,user_id=self.user_id)
+            user_history.delete_user_report_items(self.db,user_report_item_guid_list=limited_guid_list,user_id=self.user_id)
+            user_favorite.delete_user_report_items(self.db,user_report_item_guid_list=limited_guid_list,user_id=self.user_id)
+            item_tag.delete_user_report_items(self.db,user_report_item_guid_list=limited_guid_list,user_id=self.user_id)
+            start += min(limit,end-start)
+        self.user_report_item_guid_to_be_deleted.clear()
+
     def update_folder_user_report_count_db(self):
         folder_user_report_count: List[dict] = []
         for folder_report_count_detail in self.folder_user_report_count_update:
@@ -583,7 +613,7 @@ class SyncReports():
 
     def sync_agent_instance_user_reports(self):
         self.generate_incoming_report_folder_aggregate(incoming_report_details=get_reports(
-            agent_instance_user_id_list=self.agent_instance_user_id_batch_list,bi_report_count=0)
+            agent_instance_user_id_list=self.agent_instance_user_id_batch_list,bi_report_count=2)
         ) 
         self.generate_existing_report_aggregate()
         self.generate_existing_folder_aggregate()
@@ -636,23 +666,23 @@ class SyncReports():
         self.remove_folders()
         self.remove_reports()
 
-        print("reports:",len(self.reports_to_be_inserted))
-        print("folders:",len(self.folders_to_be_inserted))
-        print("insert report users:",len(self.report_user_mapping_to_be_inserted.get(1,[])))
-        print("insert folder users:",len(self.folder_user_mapping_to_be_inserted.get(1,[])))
-        print("delete report users:",len(self.report_user_mapping_to_be_deleted))
-        print("delete folder users:",len(self.folder_user_mapping_to_be_deleted))
-        print("update folder count users:",len(self.folder_user_report_count_update))
-        print("delete reports :",len(self.batch_reports_to_be_deleted))
-        print("delete folders :",len(self.batch_folders_to_be_deleted))        
+        # print("reports:",len(self.reports_to_be_inserted))
+        # print("folders:",len(self.folders_to_be_inserted))
+        # print("insert report users:",len(self.report_user_mapping_to_be_inserted.get(1,[])))
+        # print("insert folder users:",len(self.folder_user_mapping_to_be_inserted.get(1,[])))
+        # print("delete report users:",len(self.report_user_mapping_to_be_deleted))
+        # print("delete folder users:",len(self.folder_user_mapping_to_be_deleted))
+        # print("update folder count users:",len(self.folder_user_report_count_update))
+        # print("delete reports :",len(self.batch_reports_to_be_deleted))
+        # print("delete folders :",len(self.batch_folders_to_be_deleted))        
 
-        # print("reports:",len(self.reports_to_be_inserted),self.reports_to_be_inserted)
-        # print("folders:",len(self.folders_to_be_inserted),self.folders_to_be_inserted)
-        # print("insert report users:",len(self.report_user_mapping_to_be_inserted.get(1,[])),self.report_user_mapping_to_be_inserted)
-        # print("insert folder users:",len(self.folder_user_mapping_to_be_inserted.get(1,[])),self.folder_user_mapping_to_be_inserted)
-        # print("delete report users:",len(self.report_user_mapping_to_be_deleted),len(self.report_user_mapping_to_be_deleted)==len(set(self.report_user_mapping_to_be_deleted)))
-        # print("delete folder users:",len(self.folder_user_mapping_to_be_deleted),len(self.folder_user_mapping_to_be_deleted)==len(set(self.folder_user_mapping_to_be_deleted)))
-        # print("update folder count users:",len(self.folder_user_report_count_update),self.folder_user_report_count_update)
+        print("reports:",len(self.reports_to_be_inserted),self.reports_to_be_inserted)
+        print("folders:",len(self.folders_to_be_inserted),self.folders_to_be_inserted)
+        print("insert report users:",len(self.report_user_mapping_to_be_inserted.get(1,[])),self.report_user_mapping_to_be_inserted)
+        print("insert folder users:",len(self.folder_user_mapping_to_be_inserted.get(1,[])),self.folder_user_mapping_to_be_inserted)
+        print("delete report users:",len(self.report_user_mapping_to_be_deleted),len(self.report_user_mapping_to_be_deleted)==len(set(self.report_user_mapping_to_be_deleted)))
+        print("delete folder users:",len(self.folder_user_mapping_to_be_deleted),len(self.folder_user_mapping_to_be_deleted)==len(set(self.folder_user_mapping_to_be_deleted)))
+        print("update folder count users:",len(self.folder_user_report_count_update),self.folder_user_report_count_update)
 
         self.update_reports_db()
         folder_guid_id_map: dict[str,int] = self.insert_folders_db()
@@ -663,9 +693,8 @@ class SyncReports():
         self.update_folder_user_report_count_db()
         self.delete_folder_users_db()
         self.delete_report_users_db()
-        
-        
         self.insert_sync_report_logs_db()
+        self.delete_user_report_item_mappings()
         self.incoming_folder_map.clear()
         self.incoming_report_map.clear()
         self.existing_report_map.clear()
@@ -676,10 +705,10 @@ class SyncReports():
         folders_to_be_deleted: set[int] = set()
         self.user_id_agent_instance_user_map = agent_instance_user.get_agent_instance_user_list(self.db, agent_instance_id =self.agent_instance_id)
         agent_instance_user_id_list = self.user_id_agent_instance_user_map.values()
-        agent_instance_user_id_list = [1,2]
+        agent_instance_user_id_list = [1,4,7]
         start: int = 0
         end: int = len(agent_instance_user_id_list)
-        limit: int=1
+        limit: int=2
         while start<end:
             slice_range: slice = slice(start, start + min(limit, end - start))
             self.agent_instance_user_id_batch_list = agent_instance_user_id_list[slice_range]
@@ -705,22 +734,35 @@ class SyncReports():
         
         
     def start(self,user_detail: Optional[UserDetail] = None):
-        self.is_admin_sync = not bool(user_detail)
-        sync_log.update_log(
-            self.db,
-            user_id=self.user_id,
-            idx=self.sync_id,
-            sync_log_update=SyncLogUpdate(
-                start_time = time(),
-                status = codes.SYNC_STATUS["started"], 
+        try:
+            self.is_admin_sync = not bool(user_detail)
+            sync_log.update_log(
+                self.db,
+                user_id=self.user_id,
+                idx=self.sync_id,
+                sync_log_update=SyncLogUpdate(
+                    start_time = time(),
+                    status = codes.SYNC_STATUS["started"], 
+                )
             )
-        )
-        if self.is_admin_sync:
-            self.sync_agent_instance_reports()
-        else:
-            self.user_id_agent_instance_user_map = {user_detail.agent_instance_user_id: user_detail.user_id}
-            self.agent_instance_user_id_batch_list = self.user_id_agent_instance_user_map.values()
-            self.sync_agent_instance_user_reports()
+            if self.is_admin_sync:
+                self.sync_agent_instance_reports()
+            else:
+                self.user_id_agent_instance_user_map = {user_detail.agent_instance_user_id: user_detail.user_id}
+                self.agent_instance_user_id_batch_list = self.user_id_agent_instance_user_map.values()
+                self.sync_agent_instance_user_reports()
+            sync_log.update_log(
+                self.db,
+                user_id=self.user_id,
+                idx=self.sync_id,
+                sync_log_update=SyncLogUpdate(
+                    end_time = time(),
+                    status = codes.SYNC_STATUS["success"], 
+                )
+            )
+        except Exception as identifier:
+            logger.exception(identifier)
+            raise HTTP500Exception(description=str(identifier))
 
     def stop(self):
         logger.debug(f"Stopping report sync of idx {self.sync_id}..")
@@ -744,4 +786,5 @@ class SyncReports():
                 progress = self.progress
             )
         )
+    
     

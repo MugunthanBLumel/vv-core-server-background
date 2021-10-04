@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Sequence
+from sqlalchemy import Column, ForeignKey, Integer, Sequence, String
 
 from app.conf import codes
 from app.db.base_class import Base
@@ -13,6 +13,7 @@ class UserHistory(Base):
     item_type = Column(Integer, nullable=False)
     item_id = Column(Integer, nullable=False)
     viewed_at = Column(Integer, nullable=False)
+    guid = Column(String(50), nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
     created_by = Column(Integer, nullable=False)
     updated_by = Column(Integer, nullable=False)

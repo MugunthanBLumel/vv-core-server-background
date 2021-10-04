@@ -6,4 +6,4 @@ class ItemTagCreate(BaseModel):
     pass
 
 class ItemTagUpdate(BaseModel):
-    pass
+    status: int

@@ -6,4 +6,4 @@ class UserHistoryCreate(BaseModel):
     pass
 
 class UserHistoryUpdate(BaseModel):
-    pass
+    status: int

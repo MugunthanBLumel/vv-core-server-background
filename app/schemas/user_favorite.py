@@ -6,4 +6,4 @@ class UserFavoriteCreate(BaseModel):
     pass
 
 class UserFavoriteUpdate(BaseModel):
-    pass
+    status: int

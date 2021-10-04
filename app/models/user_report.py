@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, Sequence
+from sqlalchemy import Column, ForeignKey, Integer, Sequence, String
 
 from app.conf import codes
 from app.db.base_class import Base
@@ -16,6 +16,7 @@ class UserReport(Base):
         Integer, nullable=False
     )  # Either user_report.id/user_custom_url.id
     user_folder_id = Column(Integer, ForeignKey("user_folder.id"))
+    guid = Column(String(50), nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
     created_by = Column(Integer, nullable=False)
     updated_by = Column(Integer, nullable=False)

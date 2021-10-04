@@ -4,18 +4,17 @@ from app.crud.base import CRUDBase
 from app.models.item_tag import ItemTag
 from app.schemas.item_tag import ItemTagCreate,ItemTagUpdate
 from typing import List
-
+from app.conf import codes
 class CRUDItemTag(CRUDBase[ItemTag, ItemTagCreate, ItemTagUpdate]):
-    def get_item_tags(self,db: Session,item_id_list: List[int],agent_instance_user_id_list: List[int]):
-        item_tag_search: SearchQueryModel = SearchQueryModel(
-            db,
-            search_column=[
-                ItemTag.idx,
-                ItemTag.item_id,
-                # ItemTag
-            ],
-            filters=[ItemTag.item_id.in_(item_id_list)]
+
+    def delete_user_report_items(self,db:Session,user_report_item_guid_list: List[str], user_id: int):
+        self.update(db,filters=[ItemTag.guid.in_(user_report_item_guid_list)],
+        obj_in=ItemTagUpdate(
+            status = codes.DELETED
+        ),
+        user_id=user_id
         )
-        # self.get()
+
+        
 
 item_tag = CRUDItemTag(ItemTag)

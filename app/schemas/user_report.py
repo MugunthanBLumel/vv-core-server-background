@@ -6,4 +6,4 @@ class UserReportCreate(BaseModel):
     pass
 
 class UserReportUpdate(BaseModel):
-    pass
+    status: int
