@@ -163,10 +163,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             db.commit()
             db.refresh(db_obj)
             return db_obj
-        except Exception as identifier:
+        except DbException as identifier:
             logger.exception(identifier)
             db.rollback()
-            raise Exception("Error occured while inserting data in the database")
+            raise DbException("Error occured while inserting data in the database")
 
     def bulk_core_insert(self,*,obj_in):
         # engine.execute(
@@ -177,9 +177,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             db: Session= ScopedSession()
             db.bulk_insert_mappings(self.model,
             obj_in,return_defaults=False)
+            # print("insert obj: ",obj_in)
             db.commit()
             db.close()
-        except Exception as identifier:
+        except DbException as identifier:
             db.rollback()
             db.close()
             raise identifier
@@ -293,6 +294,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def bulk_core_update(self,*,obj_in):
         db: Session= ScopedSession()
         db.bulk_update_mappings(self.model,obj_in)
+        # print("update obj: ",obj_in,type(obj_in))
         db.commit()
         db.close()
 

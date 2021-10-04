@@ -5,12 +5,12 @@ from app.schemas.bi_folder import BIFolderCreate
 
 class SyncReportRequest(BaseModel):
     sync_name: str
-    agent_instance_id: List[int]
+    agent_instance_id_list: List[int]
     
     
 class SyncUserReportRequest(BaseModel):
     sync_name: str
-    agent_instance_id: List[int]
+    agent_instance_id_list: List[int]
     agent_instance_user_id: int 
     
 class IncomingReport(NamedTuple):
@@ -30,7 +30,7 @@ class ExistingReport(BaseModel):
     idx: int
     guid: str
     update_hash: str
-    agent_instance_user_details: dict[int,int]
+    agent_instance_user_details: dict[int,int] # agent_instance_user_id: user_bi_report id
 
 class FolderUserDetails(NamedTuple):
     user_bi_folder_id: int
@@ -56,3 +56,7 @@ class IncomingFolder(BaseModel):
 class FolderReportCountUpdate(NamedTuple):
     user_bi_folder_id: int
     bi_report_count: int
+
+class UserDetail(NamedTuple):
+    user_id: int
+    agent_instance_user_id: int

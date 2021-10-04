@@ -2,6 +2,7 @@ from sqlalchemy import Column, ForeignKey, Integer, Sequence, String
 
 from app.conf import codes
 from app.db.base import Base
+from app.helpers.db_helper import DatabaseHelper
 
 
 class SyncLog(Base):
@@ -12,7 +13,9 @@ class SyncLog(Base):
     
     name = Column(String(255), nullable=False)
     type = Column(Integer, nullable=False)
-    agent_instance_id = Column(Integer, ForeignKey("agent_instance.id"), nullable=False)
+    sync_batch_id = Column(Integer, nullable=True)
+    agent_instance_id = Column(Integer, ForeignKey("agent_instance.id"), nullable=True)
+    meta = Column(DatabaseHelper.get_char_seq_type(), nullable=False)
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     progress = Column(Integer, nullable=False)
     start_time = Column(Integer, nullable=False)

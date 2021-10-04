@@ -11,7 +11,7 @@ class UserBIReport(Base):
 
     idx = Column("id", Integer, Sequence("user_bi_report_id_seq"), primary_key=True)
     agent_instance_user_id = Column(Integer, ForeignKey("agent_instance_user.id"), nullable=False)
-    bi_report_id = Column(Integer, ForeignKey("bi_report.id"), nullable=True)
+    bi_report_id = Column(Integer, ForeignKey("bi_report.id"), nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)
     created_by = Column(Integer, nullable=False)
     updated_by = Column(Integer, nullable=False)

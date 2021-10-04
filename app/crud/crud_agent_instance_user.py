@@ -10,7 +10,7 @@ from app.schemas.query import SearchQueryModel
 
 
 class CRUDAgentInstanceUser(CRUDBase[AgentInstanceUser, AgentInstanceUserCreate, AgentInstanceUserUpdate]):
-    def get_agent_instance_user_list(self, db: Session, agent_instance_id: int) -> list[int]:
+    def get_agent_instance_user_list(self, db: Session, agent_instance_id: int) -> dict[int: int]:
         """this method fetches all the agent instance user ids of given agent.
 
         Parameters
@@ -22,14 +22,16 @@ class CRUDAgentInstanceUser(CRUDBase[AgentInstanceUser, AgentInstanceUserCreate,
 
         Returns
         -------
-        list[int]
+        dict[int: int]
             Contains agent instance user id's
         """
         agent_instance_users: SearchQueryModel = SearchQueryModel(
             db=db,
-            search_column=[AgentInstanceUser.idx],
+            search_column=[AgentInstanceUser.idx,
+            AgentInstanceUser.user_id
+            ],
             filters=[AgentInstanceUser.agent_instance_id == agent_instance_id],
         )
-        return [agent_user.idx for agent_user in self.get(agent_instance_users)]
+        return {agent_user.idx:agent_user.user_id for agent_user in self.get(agent_instance_users)}
 
 agent_instance_user = CRUDAgentInstanceUser(AgentInstanceUser)

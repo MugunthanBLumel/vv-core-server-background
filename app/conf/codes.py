@@ -33,13 +33,21 @@ DEFAULT_WORKER_COUNT: int = 5
 DEAD_LOCK_RETRY_LIMIT: int = 3
 
 SYNC_STATUS: dict[str,int] = {
-    "idle": 50,
-    "started": 100,
-    "success": 150,
-    "failed": 500
+    "started": 102,
+    "success": 10,
+    "partially_completed": 104,
+    "failed": 103,
+    "in_queue": 101
 }
 
 SYNC_TYPE: dict[str,int] = {
-    "admin_sync": 1,
-    "user_sync": 2
+    "admin_report_sync": 1,
+    "user_report_sync": 2
+}
+
+REPORT_SYNC_STATUS: dict[str,int] = {
+    "added": 50,
+    "updated": 150,
+    "granted": 200,
+    "revoked": 250    
 }

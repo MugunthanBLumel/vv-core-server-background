@@ -2,6 +2,10 @@ from typing import Type, Union
 from urllib.parse import quote_plus
 
 from sqlalchemy import String, Text
+from sqlalchemy.dialects.oracle import CLOB as ORACLE_CLOB
+from sqlalchemy.dialects.mysql import MEDIUMTEXT as MY_SQL_MEDIUMTEXT
+from sqlalchemy.dialects.postgresql import TEXT as POSTGRES_TEXT
+from sqlalchemy.dialects.mssql import TEXT as MSSQL_TEXT
 
 from app.schemas.config import DatabaseConnection
 
@@ -112,3 +116,24 @@ class DatabaseHelper:
         from app.conf.config import settings  # To avoid circular import error
 
         return Text if settings.DATABASE_TYPE.lower() != "oracle" else String(4000)
+
+    @classmethod
+    def get_long_char_seq_type(cls) -> Union[ORACLE_CLOB,MY_SQL_MEDIUMTEXT,POSTGRES_TEXT,MSSQL_TEXT]:
+        """Returns the character sequence type based on the database
+
+        Returns
+        -------
+        ColumnType
+            Type of the column which used to store the long character sequences
+        """
+        from app.conf.config import settings  # To avoid circular import error
+        db_name: str = settings.DATABASE_TYPE.lower()
+        if db_name == "mysql":
+            return MY_SQL_MEDIUMTEXT
+        elif db_name == "oracle":
+            return ORACLE_CLOB
+        elif db_name == "postgresql":
+            return POSTGRES_TEXT
+        elif db_name == "mssql":
+            return MSSQL_TEXT
+            

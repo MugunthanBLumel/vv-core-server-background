@@ -5,7 +5,7 @@ import contextlib
 from app.conf.config import settings
 
 try:
-    engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, echo=False)
+    engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, echo=True)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     ScopedSession = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 except Exception as identifier:
