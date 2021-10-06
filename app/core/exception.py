@@ -122,6 +122,28 @@ class DbException(Exception):
         return str(self.message)
 
 
+class StopSyncException(Exception):
+    """
+    Exception to interupt sync execution
+
+    Extends:
+    -------
+    Exception
+    """
+
+    def __init__(
+        self,
+        message: str = "",
+    ) -> None:
+        self.message = message
+        super().__init__(
+            self.message,
+        )
+
+    def __str__(self) -> str:
+        return str(self.message)
+
+
 class AuthenticationException(JSONResponse):
     """
     Exception to throw HTTP 401 Status

@@ -1,14 +1,15 @@
 """Base CRUD File """
 
-from datetime import datetime, timezone
-from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
 import time
+from datetime import datetime, timezone
+from random import randrange
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar, Union
+
 from fastapi.encoders import jsonable_encoder
 from loguru import logger
 from pydantic import BaseModel
-from sqlalchemy import Column, and_, func
+from sqlalchemy import Column, and_, exc, func
 from sqlalchemy.orm import Query, Session, noload
-
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.expression import distinct
 from sqlalchemy.sql.functions import GenericFunction
@@ -18,12 +19,6 @@ from app.conf import codes
 from app.core.exception import DbException
 from app.db.base_class import Base
 from app.schemas.query import SearchQueryModel
-from app.db.session import engine,SessionLocal,ScopedSession,ManagedSession
-from threading import Thread
-from app.core.worker import Worker
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from random import randrange
-from sqlalchemy import exc
 
 ModelType = TypeVar("ModelType", bound=Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
@@ -168,165 +163,176 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             db.rollback()
             raise DbException("Error occured while inserting data in the database")
 
-    def bulk_core_insert(self,*,obj_in):
-        # engine.execute(
-        #     self.model.__table__.insert(),
-        #     obj_in
-        #     )
-        try:
-            db: Session= ScopedSession()
-            db.bulk_insert_mappings(self.model,
-            obj_in,return_defaults=False)
-            # print("insert obj: ",obj_in)
-            db.commit()
-            db.close()
-        except DbException as identifier:
-            db.rollback()
-            db.close()
-            raise identifier
-    
-    # def batch_insert(self,db, *,obj_in: Union[List[ModelType]], batch_limit: int = 1000) -> None:
-    #     worker: Worker = Worker(worker_count=5)
-    #     start,end = 0, len(obj_in)
-    #     while start<end:
-            
-    #         limited_obj_in = obj_in[start:start+min(batch_limit,end-start)]
-    #         worker.add_job(target=self.bulk_core_insert,kwargs={"obj_in": limited_obj_in})
-    #         # self.bulk_core_insert(db,obj_in=limited_obj_in)
-    #         start+=min(batch_limit,end-start)
-    #     worker.start()
-    #     db.close()
-    #     db=ScopedSession()
-    #     return db
-        
-    def batch_insert(self,db, *,obj_in: Union[List[ModelType]], batch_limit: int = 1000) -> None:
-        try:
-            start,end = 0, len(obj_in)
-            future_map = {}
-            future_list = []
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                while start<end:
-                    
-                    limited_obj_in = obj_in[start:start+min(batch_limit,end-start)]
-                    future = executor.submit(self.bulk_core_insert,obj_in=limited_obj_in)
-                    future_map[future] = (limited_obj_in,0)
-                    future_list.append(future)
-                    # self.bulk_core_insert(db,obj_in=limited_obj_in)
-                    start+=min(batch_limit,end-start)
-            
-                while len(future_list):
-                    try:
-                        future = future_list.pop(0)       
-                        future.result()   
-                        future_map.pop(future) 
-                    except exc.IntegrityError as identifier:
-                        object_list,retry_count = future_map.pop(future)
-                        if len(object_list)>1:
-                            split_at =  len(object_list)//2
-                            first_batch = object_list[:split_at]
-                            second_batch = object_list[split_at:]
-                            first_batch_future = executor.submit(self.bulk_core_insert,obj_in=first_batch)
-                            second_batch_future = executor.submit(self.bulk_core_insert,obj_in=second_batch)
-                            future_map[first_batch_future] = (first_batch,retry_count)
-                            future_map[second_batch_future] = (second_batch,retry_count)
-                            future_list.extend([first_batch_future,second_batch_future])
-                    except exc.InternalError as identifier:
-                        object_list,retry_count = future_map.pop(future)
-                        if retry_count < codes.DEAD_LOCK_RETRY_LIMIT:
-                            wait_time = randrange( 1,5 ) +  2*retry_count  
-                            time.sleep( wait_time )
-                            future = executor.submit(self.bulk_core_insert,obj_in=object_list)
-                            future_map[future] = (object_list,retry_count+1)
-                            future_list.append(future)
-
-                        else:
-                           raise identifier
-        except DbException as identifier:
-            logger.exception(identifier)
-            raise DbException(
-                "Error occured while inserting data in the database"
-            )
-        finally:
-            db.close()
-            db=ScopedSession()
-            return db
-    
-    def batch_update(self,db, *,obj_in: Union[List[ModelType]], batch_limit: int = 1000) -> None:
-        future_map = {}
-        future_list = []
-        try:
-            
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                start,end = 0, len(obj_in)
-                while start<end:
-                    limited_obj_in = obj_in[start:start+min(batch_limit,end-start)]
-                    future = executor.submit(self.bulk_core_update,obj_in=limited_obj_in)
-                    future_map[future] = (limited_obj_in,0)
-                    future_list.append(future)
-                    #self.bulk_core_update(db,obj_in=limited_obj_in)
-                    start+=min(batch_limit,end-start)
-                
-                try:
-                    future = future_list.pop(0)       
-                    future.result()   
-                    future_map.pop(future)
-                except exc.InternalError as identifier:
-                        object_list,retry_count = future_map.pop(future)
-                        if retry_count < codes.DEAD_LOCK_RETRY_LIMIT:
-                            wait_time = randrange( 1,5 ) +  2*retry_count  
-                            time.sleep( wait_time )
-                            future = executor.submit(self.bulk_core_insert,obj_in=object_list)
-                            future_map[future] = (object_list,retry_count+1)
-                            future_list.append(future)
-                        else:
-                            raise identifier
-        except DbException as identifier:
-            logger.exception(identifier)
-            raise DbException(
-                "Error occured while inserting data in the database"
-            )
-        finally:
-            db.close()
-            db=ScopedSession()
-            return db
-
-        
-    def bulk_core_update(self,*,obj_in):
-        db: Session= ScopedSession()
-        db.bulk_update_mappings(self.model,obj_in)
-        # print("update obj: ",obj_in,type(obj_in))
-        db.commit()
-        db.close()
-
-    # def batch_update(self,db, *,obj_in: Union[List[ModelType]], batch_limit: int = 1000) -> None:
-    #     worker: Worker = Worker(worker_count=5)
-    #     start,end = 0, len(obj_in)
-    #     while start<end:
-    #         limited_obj_in = obj_in[start:start+min(batch_limit,end-start)]
-    #         worker.add_job(target=self.bulk_core_update,kwargs={"obj_in": limited_obj_in})
-    #         #self.bulk_core_update(db,obj_in=limited_obj_in)
-    #         start+=min(batch_limit,end-start)
-    #     worker.start()
-    #     db.close()
-    #     db=ScopedSession()
-    #     return db
-        
-
-    def create_all(self, db: Session, *, obj_in: Union[List[ModelType]],return_defaults=False) -> None:
-        """Adds new records in the database table
+    def bulk_core_insert(self, db: Session, *, obj_in: List[dict]) -> None:
+        """Inserts bulk of records into database table
 
         Parameters
         ----------
         db : Session
             Database session object
-        obj_in : List[ModelType]
-            Model object list to insert into the table
-
+        obj_in : List[dict]
+            List of objects to be inserted
+        Raises
+        ------
+        exc.IntegrityError
+            raised when duplicate records are inserted
+        exc.InternalError,exc.OperationalError
+            raised when dead lock has occured during insert
         """
-        
-        # db.add_all(obj_in)
-        pass
-        
+        try:
+
+            db.bulk_insert_mappings(self.model, obj_in, return_defaults=False)
+            db.commit()
+        except exc.IntegrityError as identifier:
+            db.rollback()
+            raise identifier
+        except (exc.InternalError, exc.OperationalError) as identifier:
+            db.rollback()
+            raise identifier
+
+    def bulk_core_update(self, db: Session, *, obj_in: List[dict]) -> None:
+        """Updates bulk of records in the database table
+
+        Parameters
+        ----------
+        db : Session
+            Database session object
+        obj_in : List[dict]
+            List of objects to be updated
+        Raises
+        ------
+        exc.InternalError,exc.OperationalError
+            raised when dead lock has occured during insert
+        """
+        try:
+            db.bulk_update_mappings(self.model, obj_in)
+            db.commit()
+        except (exc.InternalError, exc.OperationalError) as identifier:
+            db.rollback()
+            raise identifier
+
+    def batch_insert(
+        self,
+        db: Session,
+        *,
+        obj_in: List[dict],
+        batch_limit: int = 1000,
+        retry_count: int = 0,
+    ) -> None:
+        """This method is used to insert bulk records on batches into database table
+
+        Parameters
+        ----------
+        db : Session
+            Database session object
+        obj_in : List[dict]
+            List of objects to be inserted
+        batch_limit : int, optional
+            limit of a single batch, by default 1000
+        retry_count : int, optional
+            count of retry spent on dead lock, by default 0
+
+        Raises
+        ------
+        exc.InternalError,exc.OperationalError
+            raised when dead lock has occured during insert and max retry exceeded
+        DbException
+            raised on unhandled exceptions and dead lock retry exceeded
+        """
+        try:
+            start, end = 0, len(obj_in)
+            while start < end:
+                limited_obj_in = obj_in[start : start + min(batch_limit, end - start)]
+                try:
+                    self.bulk_core_insert(db, obj_in=limited_obj_in)
+                except exc.IntegrityError as identifier:
+                    unfinished_inserts = obj_in[start:]
+                    if len(unfinished_inserts) > 1:
+
+                        split_at = len(unfinished_inserts) // 2
+                        self.batch_insert(
+                            db,
+                            obj_in=unfinished_inserts[:split_at],
+                            batch_limit=batch_limit,
+                        )
+                        self.batch_insert(
+                            db,
+                            obj_in=unfinished_inserts[split_at:],
+                            batch_limit=batch_limit,
+                        )
+                    break
+                except (exc.InternalError, exc.OperationalError) as identifier:
+                    if retry_count < codes.DEAD_LOCK_RETRY_LIMIT:
+                        wait_time = randrange(1, 5) + 2 * retry_count
+                        time.sleep(wait_time)
+                        self.batch_insert(
+                            db,
+                            obj_in=obj_in,
+                            batch_limit=batch_limit,
+                            retry_count=retry_count + 1,
+                        )
+                        break
+                    else:
+                        raise identifier
+                start += min(batch_limit, end - start)
+        except DbException as identifier:
+            logger.exception(identifier)
+            raise DbException("Error occured while inserting data in the database")
+
+    def batch_update(
+        self,
+        db: Session,
+        *,
+        obj_in: List[dict],
+        batch_limit: int = 1000,
+        retry_count: int = 0,
+    ) -> None:
+        """This method is used to insert bulk records on batches into database table
+
+        Parameters
+        ----------
+        db : Session
+            Database session object
+        obj_in : List[dict]
+            List of objects to be updated
+        batch_limit : int, optional
+            limit of a single batch, by default 1000
+        retry_count : int, optional
+            count of retry spent on dead lock, by default 0
+
+        Raises
+        ------
+        exc.InternalError,exc.OperationalError
+            raised when dead lock has occured during update and max retry exceeded
+        DbException
+            raised on unhandled exceptions and dead lock retry exceeded
+        """
+        try:
+            start, end = 0, len(obj_in)
+            while start < end:
+                limited_obj_in = obj_in[start : start + min(batch_limit, end - start)]
+
+                try:
+                    self.bulk_core_update(db, obj_in=limited_obj_in)
+                except (exc.InternalError, exc.OperationalError) as identifier:
+                    if retry_count < codes.DEAD_LOCK_RETRY_LIMIT:
+                        wait_time = randrange(1, 5) + 2 * retry_count
+                        time.sleep(wait_time)
+                        self.batch_update(
+                            db,
+                            obj_in=obj_in,
+                            batch_limit=batch_limit,
+                            retry_count=retry_count + 1,
+                        )
+                        break
+                    else:
+                        raise identifier
+
+                start += min(batch_limit, end - start)
+        except DbException as identifier:
+            logger.exception(identifier)
+            raise DbException("Error occured while updating data in the database")
+
     def update(
         self,
         db: Session,
@@ -499,13 +505,14 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             .options(noload("*"), *search_object.load_options)
         )
         if search_object.join:
+
             for relation in search_object.join:
+                default_filter: List[ColumnElement] = []
+                if not search_object.exclude_default_filter:
+                    default_filter.append(relation.model.name.status != codes.DELETED)
                 query = query.join(
                     relation.model.name,
-                    and_(
-                        *relation.relationship,
-                        relation.model.name.status != codes.DELETED,
-                    ),
+                    and_(*relation.relationship, *default_filter),
                     isouter=relation.is_left,
                 )
         if search_object.group_by_column:
@@ -513,6 +520,8 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 search_object.search_column, search_object.group_by_column
             )
             query = query.group_by(*search_object.group_by_column)
+        if search_object.having:
+            query = query.having(*search_object.having)
         if search_object.order_by_column:
             query = query.order_by(*search_object.order_by_column)
         if search_object.limit != -1:

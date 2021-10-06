@@ -1,15 +1,19 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker,scoped_session
 import contextlib
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 from app.conf.config import settings
 
 try:
     engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, echo=False)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    ScopedSession = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
+    ScopedSession = scoped_session(
+        sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    )
 except Exception as identifier:
     print(identifier)
+
 
 @contextlib.contextmanager
 def ManagedSession():
@@ -21,7 +25,7 @@ def ManagedSession():
         db_operations.insert(session, **kwargs)  # after the with statement, the session commits to the database.
     ```
     """
-    
+
     session = ScopedSession()
     try:
         yield session
@@ -32,4 +36,3 @@ def ManagedSession():
         raise
     finally:
         session.close()
-        pass

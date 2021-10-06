@@ -1,41 +1,42 @@
 from typing import List
-from app.crud.base import CRUDBase
+
 from sqlalchemy.orm import Session
-from app.schemas.user_bi_report import UserBIReportCreate,UserBIReportUpdate
+
+from app.crud.base import CRUDBase
 from app.models.user_bi_report import UserBIReport
-from app.schemas.query import JoinModel, SearchQueryModel,Model
-from time import time
-from app.db.session import ScopedSession, engine
+from app.schemas.user_bi_report import UserBIReportCreate, UserBIReportUpdate
+
+
 class CRUDUserBIReport(CRUDBase[UserBIReport, UserBIReportCreate, UserBIReportUpdate]):
-    def get_bi_report_user_mapping(
-        self,
-        db: Session,
-        *,
-        agent_instance_user_id_list: List[int]
-    ) -> List[UserBIReport]:
-        bi_report_user_mapping_list: List[UserBIReport] = []
-        
-        start,end = 0, len(agent_instance_user_id_list)
-        limit = 1000
-        while start < end :
-            slice_range: slice = slice(start, start + min(limit, end - start))
-            
-            limited_agent_instance_user_id_list: List[int] = agent_instance_user_id_list[slice_range]
-            
-            bi_report_user_mapping_list += self.get(
-                    SearchQueryModel(
-                    db,
-                    search_column=[UserBIReport.bi_report_id,UserBIReport.agent_instance_user_id],
-                    filters=[UserBIReport.agent_instance_user_id.in_(limited_agent_instance_user_id_list)],
-                    )
-                )
-            
-            start += min(limit, end - start)
-        return bi_report_user_mapping_list
-    
-    def insert_report_users(self,db, report_user_list: List[UserBIReport]) -> ScopedSession:
-        return self.batch_insert(db,obj_in=report_user_list)
-        
-    def delete_report_users(self,db,report_user_list: List[dict]):
-        return self.batch_update(db,obj_in=report_user_list)
+    def insert_report_users(
+        self, db: Session, report_user_list: List[UserBIReport]
+    ) -> None:
+        """This method is used to insert report user mappings into
+            user_bi_report table
+
+        Parameters
+        ----------
+        db : Session
+            Session object used to insert data into database
+        report_user_list : List[UserBIReport]
+            List of user_bi_reports
+
+        """
+        return self.batch_insert(db, obj_in=report_user_list)
+
+    def delete_report_users(self, db, report_user_list: List[dict]) -> None:
+        """This method is used to delete report user mappings into
+            user_bi_report table
+
+        Parameters
+        ----------
+        db : Session
+            Session object used to delete data in database
+        report_user_list : List[dict]
+            List of user_bi_reports
+
+        """
+        return self.batch_update(db, obj_in=report_user_list)
+
+
 user_bi_report = CRUDUserBIReport(UserBIReport)

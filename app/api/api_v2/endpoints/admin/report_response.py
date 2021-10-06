@@ -1,9 +1,11 @@
 import json
 import random
 
-def get_reports(agent_instance_user_id_list=[1],bi_report_count=20):
-   result = []
-   reports = json.loads('''{
+
+def get_reports(agent_instance_user_id_list=[1], bi_report_count=20):
+    result = []
+    reports = json.loads(
+        """{
          "user_metadata":{
             "id":"ATXb3J3RcpdOqKkgzJ9Ta4o",
             "username":"srvadm"
@@ -402,24 +404,26 @@ def get_reports(agent_instance_user_id_list=[1],bi_report_count=20):
                }
             }
          ]
-      }''' ,strict=False)
-   
-   for agent_instance_user_id in agent_instance_user_id_list:
-      report_list=[]
-      for report_id in range(1,bi_report_count+1):
-         id = random.randrange(1,10000000)
-         random_report = reports["reports"][report_id]
-         # random_report = random.choice(reports["reports"])
-         # random_report = reports["reports"][report_id]
-         report_copy = random_report
-         if False and random.randrange(1,10) ==3 :
-            report_copy = random_report.copy()
-            report_copy["name"]+=f"_{id}"
-            report_copy["report_id"]+=f"_{id}"
-            report_copy["path"]+=f"_{id}//"
-         
-         if not (False and report_id==1 ):    
-            report_list.append(report_copy)
-      result.append((agent_instance_user_id,report_list))
-   
-   return result
+      }""",
+        strict=False,
+    )
+
+    for agent_instance_user_id in agent_instance_user_id_list:
+        report_list = []
+        for report_id in range(1, bi_report_count + 1):
+            id = random.randrange(1, 10000000)
+            random_report = reports["reports"][report_id]
+            # random_report = random.choice(reports["reports"])
+            # random_report = reports["reports"][report_id]
+            report_copy = random_report
+            if False and random.randrange(1, 10) == 3:
+                report_copy = random_report.copy()
+                report_copy["name"] += f"_{id}"
+                report_copy["report_id"] += f"_{id}"
+                report_copy["path"] += f"_{id}//"
+
+            if not (False and report_id == 1):
+                report_list.append(report_copy)
+        result.append((agent_instance_user_id, report_list))
+
+    return result

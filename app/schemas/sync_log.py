@@ -1,4 +1,5 @@
 from typing import Optional
+
 from pydantic.main import BaseModel
 
 
@@ -12,7 +13,8 @@ class SyncLogCreate(BaseModel):
     progress: int = 0
     start_time: Optional[int] = None
     end_time: Optional[int] = None
-    
+
+
 class SyncLogUpdate(BaseModel):
     progress: Optional[int]
     start_time: Optional[int]

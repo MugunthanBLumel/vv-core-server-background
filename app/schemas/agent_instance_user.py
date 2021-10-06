@@ -7,7 +7,3 @@ class AgentInstanceUserCreate(BaseModel):
 
 class AgentInstanceUserUpdate(BaseModel):
     pass
-
-
-class AgentInstanceUserDetails(BaseModel):
-    idx: int

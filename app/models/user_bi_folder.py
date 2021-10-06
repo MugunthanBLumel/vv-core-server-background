@@ -10,7 +10,9 @@ class UserBIFolder(Base):
     __tablename__ = "user_bi_folder"  # type: ignore
 
     idx = Column("id", Integer, Sequence("user_bi_folder_seq"), primary_key=True)
-    agent_instance_user_id = Column(Integer, ForeignKey("agent_instance_user.id"), nullable=False)
+    agent_instance_user_id = Column(
+        Integer, ForeignKey("agent_instance_user.id"), nullable=False
+    )
     bi_folder_id = Column(Integer, ForeignKey("bi_folder.id"), nullable=False)
     bi_report_count = Column(Integer, nullable=False, default=0)
     status = Column(Integer, nullable=False, default=codes.ENABLED)

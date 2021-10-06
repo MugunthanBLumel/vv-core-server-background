@@ -1,10 +1,13 @@
+from typing import Optional
+
 from sqlalchemy import Column, Integer, Sequence, String
-from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql.schema import ForeignKey
+
 from app.conf import codes
 from app.db.base_class import Base
 from app.helpers.db_helper import DatabaseHelper
-from typing import Optional
+
 
 class BIFolder(Base):
     """Maps the user and reports from various agents"""
@@ -13,7 +16,7 @@ class BIFolder(Base):
 
     idx = Column("id", Integer, Sequence("folder_id_seq"), primary_key=True)
     name = Column(String(255), nullable=False)
-    source_folder_id = Column(Integer,  ForeignKey("bi_folder.id"), nullable=True)
+    source_folder_id = Column(Integer, ForeignKey("bi_folder.id"), nullable=True)
     path = Column(DatabaseHelper.get_char_seq_type(), nullable=False)
     depth = Column(Integer, nullable=False, default=1)
     agent_instance_id = Column(Integer, ForeignKey("agent_instance.id"), nullable=False)

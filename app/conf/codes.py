@@ -13,6 +13,7 @@ def DEFAULT_TIME() -> int:
     """
     return int(datetime.now(tz=timezone.utc).timestamp())
 
+
 path_delimiter: str = "//"
 
 ITEM_TYPE_MAP: Dict[str, int] = {
@@ -32,22 +33,19 @@ FOLDER_ROOT_LEVEL_DEPTH: int = 1
 DEFAULT_WORKER_COUNT: int = 5
 DEAD_LOCK_RETRY_LIMIT: int = 3
 
-SYNC_STATUS: dict[str,int] = {
+SYNC_STATUS: dict[str, int] = {
     "started": 102,
     "success": 10,
     "partially_completed": 104,
     "failed": 103,
-    "in_queue": 101
+    "in_queue": 101,
 }
 
-SYNC_TYPE: dict[str,int] = {
-    "admin_report_sync": 1,
-    "user_report_sync": 2
-}
+SYNC_TYPE: dict[str, int] = {"admin_report_sync": 1, "user_report_sync": 2}
 
-REPORT_SYNC_STATUS: dict[str,int] = {
+REPORT_SYNC_STATUS: dict[str, int] = {
     "added": 50,
     "updated": 150,
     "granted": 200,
-    "revoked": 250    
+    "revoked": 250,
 }

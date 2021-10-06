@@ -9,7 +9,9 @@ class AgentInstanceUser(Base):
 
     __tablename__ = "agent_instance_user"  # type: ignore
 
-    idx = Column("id", Integer, Sequence("agent_instance_user_id_seq"), primary_key=True)
+    idx = Column(
+        "id", Integer, Sequence("agent_instance_user_id_seq"), primary_key=True
+    )
     user_id = Column(Integer, ForeignKey("user.id"), nullable=False)
     agent_instance_id = Column(Integer, ForeignKey("agent_instance.id"), nullable=False)
     status = Column(Integer, nullable=False, default=codes.ENABLED)

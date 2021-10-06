@@ -1,11 +1,9 @@
 import logging
 
-from alembic import command
-from alembic.config import Config
 from loguru import logger
-from tenacity import after_log, before_log, retry, stop_after_attempt, wait_fixed
+from tenacity import (after_log, before_log, retry, stop_after_attempt,
+                      wait_fixed)
 
-from app.conf.config import settings
 from app.db.session import engine
 
 MAX_RETRY = 3
@@ -28,7 +26,6 @@ def check_db() -> None:
     except Exception as e:
         logger.exception(e)
         raise e
-
 
 
 def license_check() -> None:

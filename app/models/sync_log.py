@@ -10,7 +10,7 @@ class SyncLog(Base):
     __tablename__ = "sync_log"  # type: ignore
 
     idx = Column("id", Integer, Sequence("sync_log_id_seq"), primary_key=True)
-    
+
     name = Column(String(255), nullable=False)
     type = Column(Integer, nullable=False)
     sync_batch_id = Column(Integer, nullable=True)

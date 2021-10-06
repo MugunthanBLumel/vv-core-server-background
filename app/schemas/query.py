@@ -1,4 +1,5 @@
-from typing import Callable, Generic, List, NamedTuple, Optional, Type, TypeVar, Union
+from typing import (Callable, Generic, List, NamedTuple, Optional, Type,
+                    TypeVar, Union)
 
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ClauseElement, ColumnElement
@@ -42,6 +43,7 @@ class SearchQueryModel(NamedTuple):
     exclude_default_filter: bool = False
     join: List[JoinModel] = []
     group_by_column: List[ColumnElement] = []
+    having: List[ColumnElement] = []
     order_by_column: List[ColumnElement] = []
     skip: int = 0
     limit: int = -1

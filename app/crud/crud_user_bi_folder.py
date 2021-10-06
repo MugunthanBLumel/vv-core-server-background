@@ -1,45 +1,50 @@
 from typing import List
-from app.crud.base import CRUDBase
+
 from sqlalchemy.orm import Session
-from app.schemas.user_bi_folder import UserBIFolderCreate,UserBIFolderUpdate
+
+from app.crud.base import CRUDBase
 from app.models.user_bi_folder import UserBIFolder
-from app.schemas.query import JoinModel, SearchQueryModel,Model
-from time import time
-from app.db.session import engine
+from app.schemas.user_bi_folder import UserBIFolderCreate, UserBIFolderUpdate
+
+
 class CRUDUserBIFolder(CRUDBase[UserBIFolder, UserBIFolderCreate, UserBIFolderUpdate]):
-    def get_bi_folder_user_mapping(
-        self,
-        db: Session,
-        *,
-        agent_instance_user_id_list: List[int]
-    ) -> List[UserBIFolder]:
-        bi_folder_user_mapping_list: List[UserBIFolder] = []
-        
-        start,end = 0, len(agent_instance_user_id_list)
-        limit = 1000
-        while start < end :
-            slice_range: slice = slice(start, start + min(limit, end - start))
-            
-            limited_agent_instance_user_id_list: List[int] = agent_instance_user_id_list[slice_range]
-            
-            bi_folder_user_mapping_list += self.get(
-                    SearchQueryModel(
-                    db,
-                    search_column=[UserBIFolder.bi_folder_id,UserBIFolder.agent_instance_user_id,
-                    UserBIFolder.bi_report_count],
-                    filters=[UserBIFolder.agent_instance_user_id.in_(limited_agent_instance_user_id_list)],
-                    )
-                )
-            
-            start += min(limit, end - start)
-        return bi_folder_user_mapping_list
+    def insert_folder_users(
+        self, db: Session, folder_user_list: List[UserBIFolder]
+    ) -> None:
+        """Insert user mappings for folders
 
-    def insert_folder_users(self,db, folder_user_list: List[UserBIFolder]) -> Session:
-        return self.batch_insert(db,obj_in=folder_user_list)
+        Parameters
+        ----------
+        db :
+            Session object used to insert data into database
+        folder_user_list : List[UserBIFolder]
+            List of user_bi_folder to be inserted
+        """
+        self.batch_insert(db, obj_in=folder_user_list)
 
-    def delete_folder_users(self,db,folder_user_list: List[dict]):
-        return self.batch_update(db,obj_in=folder_user_list)
+    def delete_folder_users(self, db: Session, folder_user_list: List[dict]) -> None:
+        """Delete user mappings for folders
 
-    def update_folder_users(self,db,folder_user_list: List[dict]):
-        return self.batch_update(db,obj_in=folder_user_list)
+        Parameters
+        ----------
+        db :
+            Session object used to update data in database
+        folder_user_list : List[UserBIFolder]
+            List of user_bi_folder to be deleted
+        """
+        self.batch_update(db, obj_in=folder_user_list)
+
+    def update_folder_users(self, db: Session, folder_user_list: List[dict]) -> None:
+        """Update user mappings for folders
+
+        Parameters
+        ----------
+        db :
+            Session object used to update data in database
+        folder_user_list : List[UserBIFolder]
+            List of user_bi_folder to be updated
+        """
+        self.batch_update(db, obj_in=folder_user_list)
+
+
 user_bi_folder = CRUDUserBIFolder(UserBIFolder)

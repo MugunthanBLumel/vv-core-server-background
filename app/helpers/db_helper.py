@@ -2,8 +2,8 @@ from typing import Type, Union
 from urllib.parse import quote_plus
 
 from sqlalchemy import String, Text
-from sqlalchemy.dialects.oracle import CLOB as ORACLE_CLOB
 from sqlalchemy.dialects.mysql import MEDIUMTEXT as MY_SQL_MEDIUMTEXT
+from sqlalchemy.dialects.oracle import CLOB as ORACLE_CLOB
 
 from app.schemas.config import DatabaseConnection
 
@@ -87,11 +87,12 @@ class Oracle(DatabaseDetails):
         url    : str
             URL with dialect to establish the database connection
         """
-        url: str = "oracle+cx_oracle://%s:%s@%s:%d/" % (
+        url: str = "oracle+cx_oracle://%s:%s@%s:%s/%s" % (
             self._username,
             quote_plus(self._password),
             self._host,
             self._port,
+            "orcl",
         )
         if self._extra:
             url += "&" + self._extra
@@ -116,7 +117,7 @@ class DatabaseHelper:
         return Text if settings.DATABASE_TYPE.lower() != "oracle" else String(4000)
 
     @classmethod
-    def get_long_char_seq_type(cls) -> Union[ORACLE_CLOB,MY_SQL_MEDIUMTEXT]:
+    def get_long_char_seq_type(cls) -> Union[ORACLE_CLOB, MY_SQL_MEDIUMTEXT]:
         """Returns the long character sequence type based on the database
 
         Returns
@@ -125,6 +126,7 @@ class DatabaseHelper:
             Type of the column which used to store the long character sequences
         """
         from app.conf.config import settings  # To avoid circular import error
+
         db_name: str = settings.DATABASE_TYPE.lower()
         if db_name == "mysql":
             return MY_SQL_MEDIUMTEXT
@@ -134,4 +136,3 @@ class DatabaseHelper:
             return Text
         elif db_name == "mssql":
             return Text
-            

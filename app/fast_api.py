@@ -1,6 +1,7 @@
 from logging import Logger
 from typing import Any
 
+import sqltap
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
@@ -9,7 +10,6 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app.api.api_v2.api import v2_api_router
 from app.conf.config import settings
-import sqltap
 
 
 def init_fast_api_app(logger: Logger) -> FastAPI:
@@ -30,7 +30,7 @@ def init_fast_api_app(logger: Logger) -> FastAPI:
         allow_headers=["*"],
     )
     app.include_router(v2_api_router, prefix=settings.API_PREFIX)
-    
+
     @app.middleware("http")
     async def add_sql_tap(request: Request, call_next):
         profiler = sqltap.start()
@@ -38,6 +38,7 @@ def init_fast_api_app(logger: Logger) -> FastAPI:
         statistics = profiler.collect()
         sqltap.report(statistics, "report.html", report_format="html")
         return response
+
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(
         request: Request, exc: RequestValidationError

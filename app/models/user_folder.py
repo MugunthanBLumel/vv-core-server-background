@@ -35,7 +35,6 @@ class UserFolder(Base):
         depth: int,
         source_folder_id: Optional[int] = None,
         parent: Optional["UserFolder"] = None,
-
     ):
         self.name = name
         self.user_id = user_id
