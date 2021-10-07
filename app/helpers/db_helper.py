@@ -40,7 +40,7 @@ class MySql(DatabaseDetails):
         url    : str
             URL with dialect to establish the database connection
         """
-        url: str = "mysql+mysqldb://%s:%s@%s:%d/%s?charset=%s" % (
+        url: str = "mysql+pymysql://%s:%s@%s:%d/%s?charset=%s" % (
             self._username,
             quote_plus(self._password),
             self._host,

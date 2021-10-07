@@ -214,9 +214,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def batch_insert(
         self,
         db: Session,
+        batch_limit: int = codes.BULK_DB_BATCH_LIMIT,
         *,
         obj_in: List[dict],
-        batch_limit: int = 1000,
         retry_count: int = 0,
     ) -> None:
         """This method is used to insert bulk records on batches into database table
@@ -245,6 +245,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 limited_obj_in = obj_in[start : start + min(batch_limit, end - start)]
                 try:
                     self.bulk_core_insert(db, obj_in=limited_obj_in)
+                    del obj_in[start : start + min(batch_limit, end - start)]
                 except exc.IntegrityError as identifier:
                     unfinished_inserts = obj_in[start:]
                     if len(unfinished_inserts) > 1:
@@ -282,9 +283,9 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     def batch_update(
         self,
         db: Session,
+        batch_limit: int = codes.BULK_DB_BATCH_LIMIT,
         *,
         obj_in: List[dict],
-        batch_limit: int = 1000,
         retry_count: int = 0,
     ) -> None:
         """This method is used to insert bulk records on batches into database table
@@ -314,6 +315,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
 
                 try:
                     self.bulk_core_update(db, obj_in=limited_obj_in)
+                    del obj_in[start : start + min(batch_limit, end - start)]
                 except (exc.InternalError, exc.OperationalError) as identifier:
                     if retry_count < codes.DEAD_LOCK_RETRY_LIMIT:
                         wait_time = randrange(1, 5) + 2 * retry_count

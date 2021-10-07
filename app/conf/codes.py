@@ -49,3 +49,5 @@ REPORT_SYNC_STATUS: dict[str, int] = {
     "granted": 200,
     "revoked": 250,
 }
+
+BULK_DB_BATCH_LIMIT = 10000

@@ -159,9 +159,9 @@ class CRUDBIReport(CRUDBase[BIReport, BIReportCreate, BIReportUpdate]):
                 filters=[BIReport.agent_instance_id == agent_instance_id],
             )
         )
-
-    def get_reports_to_be_deleted(
-        self, db: Session, agent_instance_id: int, report_id_list: List[int]
+    
+    def get_all_reports_to_be_deleted(
+        self, db: Session, agent_instance_id: int
     ) -> List[int]:
         """This method is used to get list of non deleted report id's
         which doesn't have user mappings
@@ -172,48 +172,39 @@ class CRUDBIReport(CRUDBase[BIReport, BIReportCreate, BIReportUpdate]):
             Session object used to retrive data from database
         agent_instance_id : int
             agent_instance_id's of the report
-        report_id_list : int
-            list of report id's
+        
         Returns
         -------
         List[int]
             list of non deleted report id's which doesn't have user mappings
         """
-        bi_report_id_list: List[int] = []
-        start: int = 0
-        end: int = len(report_id_list)
-        limit: int = 1000
-
-        while start < end:
-            slice_range: slice = slice(start, start + min(limit, end - start))
-            limited_report_id_list: List[int] = report_id_list[slice_range]
-            report_list: List[BIReport] = self.get(
-                SearchQueryModel(
-                    db,
-                    search_column=[BIReport.idx],
-                    join=[
-                        JoinModel(
-                            model=Model(UserBIReport),
-                            relationship=[
-                                BIReport.agent_instance_id == agent_instance_id,
-                                UserBIReport.bi_report_id == BIReport.idx,
-                            ],
-                        ),
-                    ],
-                    group_by_column=[BIReport.idx],
-                    having=[func.min(UserBIReport.status) != codes.ENABLED],
-                    exclude_default_filter=True,
-                    filters=[
-                        BIReport.idx.in_(limited_report_id_list),
-                        BIReport.status == codes.ENABLED,
-                    ],
-                )
+        bi_report_id_list : List[int]= []
+        report_list: List[BIReport] = self.get(
+            SearchQueryModel(
+                db,
+                search_column=[BIReport.idx],
+                join=[
+                    JoinModel(
+                        model=Model(UserBIReport),
+                        relationship=[
+                            BIReport.agent_instance_id == agent_instance_id,
+                            UserBIReport.bi_report_id == BIReport.idx,
+                        ],
+                    ),
+                ],
+                group_by_column=[BIReport.idx],
+                having=[func.min(UserBIReport.status) != codes.ENABLED],
+                exclude_default_filter=True,
+                filters=[
+                    BIReport.status == codes.ENABLED,
+                ],
             )
-            for report in report_list:
-                bi_report_id_list.append(report.idx)
-            start += min(limit, end - start)
+        )
+        for report in report_list:
+            bi_report_id_list.append(report.idx)
+            
         return bi_report_id_list
-
+        
     def insert_reports(self, db: Session, report_list: List[dict]) -> None:
         """This method is used to insert reports
 

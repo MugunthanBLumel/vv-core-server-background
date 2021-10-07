@@ -146,8 +146,8 @@ class CRUDBIFolder(CRUDBase[BIFolder, BIFolderCreate, BIFolderUpdate]):
             start += min(limit, end - start)
         return bi_folder_list
 
-    def get_folders_to_be_deleted(
-        self, db: Session, agent_instance_id: int, folder_id_list: List[int]
+    def get_all_folders_to_be_deleted(
+        self, db: Session, agent_instance_id: int
     ) -> List[int]:
         """This method is used to get list of non deleted folder id's
         which doesn't have user mappings
@@ -158,47 +158,39 @@ class CRUDBIFolder(CRUDBase[BIFolder, BIFolderCreate, BIFolderUpdate]):
             Session object used to retrive data from database
         agent_instance_id : int
             agent_instance_id's of the folder
-        folder_id_list : int
-            list of folder id's
+        
         Returns
         -------
         List[int]
             list of non deleted folder id's which doesn't have user mappings
         """
-        bi_folder_id_list: List[int] = []
-        start: int = 0
-        end: int = len(folder_id_list)
-        limit: int = 1000
-
-        while start < end:
-            slice_range: slice = slice(start, start + min(limit, end - start))
-            limited_folder_id_list: List[int] = folder_id_list[slice_range]
-            folder_list: List[BIFolder] = self.get(
-                SearchQueryModel(
-                    db,
-                    search_column=[BIFolder.idx],
-                    join=[
-                        JoinModel(
-                            model=Model(UserBIFolder),
-                            relationship=[
-                                BIFolder.agent_instance_id == agent_instance_id,
-                                UserBIFolder.bi_folder_id == BIFolder.idx,
-                            ],
-                        ),
-                    ],
-                    group_by_column=[BIFolder.idx],
-                    having=[func.min(UserBIFolder.status) != codes.ENABLED],
-                    exclude_default_filter=True,
-                    filters=[
-                        BIFolder.idx.in_(limited_folder_id_list),
-                        BIFolder.status == codes.ENABLED,
-                    ],
-                )
+        bi_folder_id_list : List[int]= []
+        folder_list: List[BIFolder] = self.get(
+            SearchQueryModel(
+                db,
+                search_column=[BIFolder.idx],
+                join=[
+                    JoinModel(
+                        model=Model(UserBIFolder),
+                        relationship=[
+                            BIFolder.agent_instance_id == agent_instance_id,
+                            UserBIFolder.bi_folder_id == BIFolder.idx,
+                        ],
+                    ),
+                ],
+                group_by_column=[BIFolder.idx],
+                having=[func.min(UserBIFolder.status) != codes.ENABLED],
+                exclude_default_filter=True,
+                filters=[
+                    BIFolder.status == codes.ENABLED,
+                ],
             )
-            for folder in folder_list:
-                bi_folder_id_list.append(folder.idx)
-            start += min(limit, end - start)
+        )
+        for folder in folder_list:
+            bi_folder_id_list.append(folder.idx)
+            
         return bi_folder_id_list
+        
 
     def insert_folders(self, db: Session, folder_list: List[dict]) -> None:
         """This method is used to insert folders

@@ -228,10 +228,11 @@ class SyncReports:
         
         if not self.is_admin_sync:
             self.update_progress(10, is_increment=True)
-        self.check_running_status()
+        
         logger.debug(
             f"Incoming report and folder aggregate generated successfully for the sync_id {self.sync_id}"
         )
+        self.check_running_status()
 
     def generate_existing_report_aggregate(self) -> None:
         """This method is used to construct existing report aggregate"""
@@ -265,10 +266,10 @@ class SyncReports:
         self.existing_report_map = existing_report_map
         if not self.is_admin_sync:
             self.update_progress(5, is_increment=True)
-        self.check_running_status()
         logger.debug(
             f"Existing report aggregate generated successfully for the sync_id {self.sync_id}"
         )
+        self.check_running_status()
 
     def generate_existing_folder_aggregate(self) -> None:
         """This method is used to construct existing folder aggregate"""
@@ -304,10 +305,10 @@ class SyncReports:
         self.existing_folder_map = existing_folder_map
         if not self.is_admin_sync:
             self.update_progress(5, is_increment=True)
-        self.check_running_status()
         logger.debug(
             f"Existing folder aggregate generated successfully for the sync_id {self.sync_id}"
         )
+        self.check_running_status()
 
     def add_folder(self, incoming_folder: IncomingFolder) -> None:
         """This method is used to add folder to folders_to_be_inserted list
@@ -543,6 +544,7 @@ class SyncReports:
                 ).encode()
             ).hexdigest()
         )
+        self.check_running_status()
 
     def remove_report_user_mapping(
         self,
@@ -920,6 +922,7 @@ class SyncReports:
             self.folder_user_mapping_to_be_inserted.clear()
         if not self.is_admin_sync:
             self.update_progress(10, is_increment=True)
+        self.check_running_status()
 
     def insert_report_users_db(self, report_guid_id_map: dict[str, int]) -> None:
         """This method is used to insert report user mappings in report_user_mapping_to_be_inserted list into db
@@ -977,6 +980,7 @@ class SyncReports:
             self.report_user_mapping_to_be_inserted.clear()
         if not self.is_admin_sync:
             self.update_progress(10, is_increment=True)
+        self.check_running_status()
 
     def insert_sync_report_logs_db(self) -> None:
         """This method is used to insert sync_reports_log in sync_reports_log_to_be_inserted list into db"""
@@ -1022,6 +1026,8 @@ class SyncReports:
                 self.sync_reports_log_to_be_updated.clear()
         if not self.is_admin_sync:
             self.update_progress(10, is_increment=True)
+        
+        self.check_running_status()
 
     def update_folder_user_report_count_db(self) -> None:
         """Updating folder user's report counts in the folder_user_report_count_update list on db"""
@@ -1048,6 +1054,7 @@ class SyncReports:
             self.folder_user_report_count_update.clear()
         if not self.is_admin_sync:
             self.update_progress(5, is_increment=True)
+        self.check_running_status()
 
     def update_reports_db(self) -> None:
         """Updating reports in the reports_to_be_updated list on db"""
@@ -1081,7 +1088,7 @@ class SyncReports:
             list of folders to be deleted
         """
         if folders_to_be_deleted:
-            logger.debug(f"Deleteing folders for the sync_id {self.sync_id}...")
+            logger.debug(f"Deleting folders for the sync_id {self.sync_id}...")
             delete_folder_list: List[dict] = []
             for folder_id in folders_to_be_deleted:
                 delete_folder_list.append(
@@ -1099,6 +1106,7 @@ class SyncReports:
                 f"Deleted {len(folders_to_be_deleted)} folders for the sync_id {self.sync_id}"
             )
             folders_to_be_deleted.clear()
+        self.check_running_status()
 
     def delete_reports_db(self, reports_to_be_deleted: List[int]) -> None:
         """This method is used to delete reports in the reports_to_be_deleted list from db
@@ -1109,7 +1117,7 @@ class SyncReports:
             list of report id's to be deleted
         """
         if reports_to_be_deleted:
-            logger.debug(f"Deleteing reports for the sync_id {self.sync_id}...")
+            logger.debug(f"Deleting reports for the sync_id {self.sync_id}...")
             delete_report_list: List[dict] = []
             for report_id in reports_to_be_deleted:
                 delete_report_list.append(
@@ -1125,30 +1133,32 @@ class SyncReports:
                 f"Deleted {len(reports_to_be_deleted)} reports for the sync_id {self.sync_id}"
             )
             reports_to_be_deleted.clear()
+        self.check_running_status()
 
     def delete_folder_users_db(self) -> None:
         """This method is used to delete folder user mappings in the
         folder_user_mapping_to_be_deleted list from db
         """
-        logger.debug(f"Deleteing folder user mapping for the sync_id {self.sync_id}...")
-        delete_folder_user_list: List[dict] = []
-        for user_bi_folder_id in self.folder_user_mapping_to_be_deleted:
-            delete_folder_user_list.append(
-                {
-                    "idx": user_bi_folder_id,
-                    "bi_report_count": 0,
-                    "status": codes.DELETED,
-                    "updated_by": self.user_id,
-                    "updated_at": codes.DEFAULT_TIME(),
-                }
+        if self.folder_user_mapping_to_be_deleted:
+            logger.debug(f"Deleting folder user mapping for the sync_id {self.sync_id}...")
+            delete_folder_user_list: List[dict] = []
+            for user_bi_folder_id in self.folder_user_mapping_to_be_deleted:
+                delete_folder_user_list.append(
+                    {
+                        "idx": user_bi_folder_id,
+                        "bi_report_count": 0,
+                        "status": codes.DELETED,
+                        "updated_by": self.user_id,
+                        "updated_at": codes.DEFAULT_TIME(),
+                    }
+                )
+            user_bi_folder.delete_folder_users(
+                self.db, folder_user_list=delete_folder_user_list
             )
-        user_bi_folder.delete_folder_users(
-            self.db, folder_user_list=delete_folder_user_list
-        )
-        logger.debug(
-            f"Deleted {len(self.folder_user_mapping_to_be_deleted)} folder user mapping for the sync_id {self.sync_id}"
-        )
-        self.folder_user_mapping_to_be_deleted.clear()
+            logger.debug(
+                f"Deleted {len(self.folder_user_mapping_to_be_deleted)} folder user mapping for the sync_id {self.sync_id}"
+            )
+            self.folder_user_mapping_to_be_deleted.clear()
         if not self.is_admin_sync:
             self.update_progress(5, is_increment=True)
 
@@ -1156,24 +1166,25 @@ class SyncReports:
         """This method is used to delete report user mappings in the
         report_user_mapping_to_be_deleted list from db
         """
-        logger.debug(f"Deleteing report user mapping for the sync_id {self.sync_id}...")
-        delete_report_user_list: List[dict] = []
-        for user_bi_report_id in self.report_user_mapping_to_be_deleted:
-            delete_report_user_list.append(
-                {
-                    "idx": user_bi_report_id,
-                    "status": codes.DELETED,
-                    "updated_by": self.user_id,
-                    "updated_at": codes.DEFAULT_TIME(),
-                }
+        if self.report_user_mapping_to_be_deleted:
+            logger.debug(f"Deleting report user mapping for the sync_id {self.sync_id}...")
+            delete_report_user_list: List[dict] = []
+            for user_bi_report_id in self.report_user_mapping_to_be_deleted:
+                delete_report_user_list.append(
+                    {
+                        "idx": user_bi_report_id,
+                        "status": codes.DELETED,
+                        "updated_by": self.user_id,
+                        "updated_at": codes.DEFAULT_TIME(),
+                    }
+                )
+            user_bi_report.delete_report_users(
+                self.db, report_user_list=delete_report_user_list
             )
-        user_bi_report.delete_report_users(
-            self.db, report_user_list=delete_report_user_list
-        )
-        logger.debug(
-            f"Deleted {len(self.report_user_mapping_to_be_deleted)} report user mapping for the sync_id {self.sync_id}"
-        )
-        self.report_user_mapping_to_be_deleted.clear()
+            logger.debug(
+                f"Deleted {len(self.report_user_mapping_to_be_deleted)} report user mapping for the sync_id {self.sync_id}"
+            )
+            self.report_user_mapping_to_be_deleted.clear()
         if not self.is_admin_sync:
             self.update_progress(5, is_increment=True)
 
@@ -1183,52 +1194,56 @@ class SyncReports:
         """
         # user_report_item_guid_to_be_deleted list has guid's(user_id,item_type,bi_report_id) to be deleted
         # These guid's are checked for records to be deleted in user_report,user_history,user_favorite,user_report
-        logger.debug(
-            f"Deleteing user_report_item_mappings for the sync_id {self.sync_id}..."
-        )
-        start: int = 0
-        end: int = len(self.user_report_item_guid_to_be_deleted)
-        limit: int = 1000
-        while start < end:
-            limited_guid_list = self.user_report_item_guid_to_be_deleted[
-                start : start + min(limit, end - start)
-            ]
-            user_report.delete_user_report_items(
-                self.db,
-                user_report_item_guid_list=limited_guid_list,
-                user_id=self.user_id,
+        if self.user_report_item_guid_to_be_deleted:
+            logger.debug(
+                f"Deleting user_report_item_mappings for the sync_id {self.sync_id}..."
             )
-            user_history.delete_user_report_items(
-                self.db,
-                user_report_item_guid_list=limited_guid_list,
-                user_id=self.user_id,
+            start: int = 0
+            end: int = len(self.user_report_item_guid_to_be_deleted)
+            limit: int = 1000
+            while start < end:
+                limited_guid_list = self.user_report_item_guid_to_be_deleted[
+                    start : start + min(limit, end - start)
+                ]
+                user_report.delete_user_report_items(
+                    self.db,
+                    user_report_item_guid_list=limited_guid_list,
+                    user_id=self.user_id,
+                )
+                user_history.delete_user_report_items(
+                    self.db,
+                    user_report_item_guid_list=limited_guid_list,
+                    user_id=self.user_id,
+                )
+                user_favorite.delete_user_report_items(
+                    self.db,
+                    user_report_item_guid_list=limited_guid_list,
+                    user_id=self.user_id,
+                )
+                item_tag.delete_user_report_items(
+                    self.db,
+                    user_report_item_guid_list=limited_guid_list,
+                    user_id=self.user_id,
+                )
+                start += min(limit, end - start)
+            logger.debug(
+                f"Deleted user_report_item_mappings for the sync_id {self.sync_id}"
             )
-            user_favorite.delete_user_report_items(
-                self.db,
-                user_report_item_guid_list=limited_guid_list,
-                user_id=self.user_id,
-            )
-            item_tag.delete_user_report_items(
-                self.db,
-                user_report_item_guid_list=limited_guid_list,
-                user_id=self.user_id,
-            )
-            start += min(limit, end - start)
-        logger.debug(
-            f"Deleted user_report_item_mappings for the sync_id {self.sync_id}"
-        )
-        self.user_report_item_guid_to_be_deleted.clear()
+            self.user_report_item_guid_to_be_deleted.clear()
         if not self.is_admin_sync:
             self.update_progress(10, is_increment=True)
+        self.check_running_status()
 
-    def sync_agent_instance_user_reports(self) -> None:
+    def sync_agent_instance_user_reports(self,start) -> None:
         """This method is used to perform sync for the batch of agent users present in
         agent_instance_user_id_batch_list
         """
         self.generate_incoming_report_folder_aggregate(
             incoming_report_details=get_reports(
+                start,
                 agent_instance_user_id_list=self.agent_instance_user_id_batch_list,
-                bi_report_count=1000,
+                bi_report_count=1,
+                
             )
         )
         self.generate_existing_report_aggregate()
@@ -1343,10 +1358,137 @@ class SyncReports:
         self.existing_report_map.clear()
         self.existing_folder_map.clear()
 
+    def sync_agent_instance_user_reports_1(self,start) -> None:
+        """This method is used to perform sync for the batch of agent users present in
+        agent_instance_user_id_batch_list
+        """
+        self.generate_incoming_report_folder_aggregate(
+            incoming_report_details=get_reports(
+                start,
+                agent_instance_user_id_list=self.agent_instance_user_id_batch_list,
+                bi_report_count=1,
+                
+            )
+        )
+        self.generate_existing_report_aggregate()
+        self.generate_existing_folder_aggregate()
+        
+        # Removing existing folders and reports for users that are not present in incoming_report_map
+        self.remove_folders()
+        self.remove_reports()
+        
+        logger.debug("Processing incoming folders...")
+        index: int = 0
+        for incoming_folder_guid, incoming_folder in self.incoming_folder_map.items():
+            existing_folder: ExistingFolder = self.existing_folder_map.get(
+                incoming_folder_guid
+            )
+            
+            if existing_folder:
+
+                self.update_folder_user_report_count(
+                    incoming_folder=incoming_folder, existing_folder=existing_folder
+                )
+                self.add_folder_user_mapping(
+                    incoming_folder=incoming_folder, existing_folder=existing_folder
+                )
+                self.remove_folder_user_mapping(
+                    incoming_folder=incoming_folder, existing_folder=existing_folder
+                )
+                # clearing user information on the folder in order to save memory usage
+                # existing_folder.agent_instance_user_details.clear()
+
+            else:
+                self.add_folder_user_mapping(incoming_folder=incoming_folder)
+                self.add_folder(incoming_folder=incoming_folder)
+                # clearing user information on the folder in order to save memory usage
+                # incoming_folder.agent_instance_users.clear()
+                # incoming_folder.user_report_count_map.clear()
+
+            logger.debug("Processing incoming reports...")
+            for incoming_report_guid, incoming_report in self.incoming_report_map.items():
+                existing_report: ExistingReport = self.existing_report_map.get(
+                    incoming_report_guid
+                )
+                if existing_report:
+                    self.add_report_user_mapping(
+                        incoming_report=incoming_report, existing_report=existing_report
+                    )
+                    if incoming_report.update_hash != existing_report.update_hash:
+                        self.reports_to_be_updated.append(
+                            {
+                                "idx": existing_report.idx,
+                                "name": incoming_report.name,
+                                "description": incoming_report.description,
+                                "url": incoming_report.url,
+                                "url_t": incoming_report.url_t,
+                                "meta": incoming_report.meta,
+                                "sync_metadata": incoming_report.sync_metadata,
+                            }
+                        )
+                    self.remove_report_user_mapping(
+                        incoming_report=incoming_report, existing_report=existing_report
+                    )
+                
+                else:
+                    # report does not exist
+                    self.add_report_user_mapping(incoming_report=incoming_report)
+                    self.reports_to_be_inserted.append(incoming_report_guid)
+            
+
+            folder_guid_id_map: dict[str, int] = self.insert_folders_db()
+
+            self.insert_folder_users_db(folder_guid_id_map=folder_guid_id_map)
+            report_guid_id_map: dict[str, int] = self.insert_reports_db(
+                folder_guid_id_map=folder_guid_id_map
+            )
+            self.insert_report_users_db(report_guid_id_map=report_guid_id_map)
+
+            self.update_folder_user_report_count_db()
+            self.delete_folder_users_db()
+            self.delete_report_users_db()
+            self.delete_user_report_item_mappings()
+            self.insert_sync_report_logs_db()    
+
+        print("reports:", len(self.reports_to_be_inserted))
+        print("folders:", len(self.folders_to_be_inserted))
+        print(
+            "insert report users:",
+            len(self.report_user_mapping_to_be_inserted.get(1, [])),
+        )
+        print(
+            "insert folder users:",
+            len(self.folder_user_mapping_to_be_inserted.get(1, [])),
+            len(self.folder_user_mapping_to_be_inserted.get(1, [])),
+            len(set(self.folder_user_mapping_to_be_inserted.get(1, []))),
+        )
+
+        print("delete report users:", len(self.report_user_mapping_to_be_deleted))
+        print("delete folder users:", len(self.folder_user_mapping_to_be_deleted))
+        print("update folder count users:", len(self.folder_user_report_count_update))
+        print("delete reports :", len(self.batch_reports_to_be_deleted))
+        print("delete folders :", len(self.batch_folders_to_be_deleted))
+        print("user item guid to delete", len(self.user_report_item_guid_to_be_deleted))
+        # print("reports:",len(self.reports_to_be_inserted),self.reports_to_be_inserted)
+        # print("folders:",len(self.folders_to_be_inserted),self.folders_to_be_inserted)
+        # print("insert report users:",len(self.report_user_mapping_to_be_inserted.get(1,[])),self.report_user_mapping_to_be_inserted)
+        # print("insert folder users:",len(self.folder_user_mapping_to_be_inserted.get(1,[])),self.folder_user_mapping_to_be_inserted)
+        # print("delete report users:",len(self.report_user_mapping_to_be_deleted),len(self.report_user_mapping_to_be_deleted)==len(set(self.report_user_mapping_to_be_deleted)))
+        # print("delete folder users:",len(self.folder_user_mapping_to_be_deleted),len(self.folder_user_mapping_to_be_deleted)==len(set(self.folder_user_mapping_to_be_deleted)))
+        # print("update folder count users:",len(self.folder_user_report_count_update),self.folder_user_report_count_update)
+        # print("user item guid to delete", self.user_report_item_guid_to_be_deleted)
+
+        self.update_reports_db()
+        
+        self.incoming_folder_map.clear()
+        self.incoming_report_map.clear()
+        self.existing_report_map.clear()
+        self.existing_folder_map.clear()
+
     def sync_agent_instance_reports(self) -> None:
         """This method is used to perform sync for the agent instance in batches of the agent instance users"""
-        reports_to_be_deleted: set[int] = set()
-        folders_to_be_deleted: set[int] = set()
+        # reports_to_be_deleted: set[int] = set()
+        # folders_to_be_deleted: set[int] = set()
         self.agent_instance_user_id_map = (
             agent_instance_user.get_agent_instance_user_list(
                 self.db, agent_instance_id=self.agent_instance_id
@@ -1355,7 +1497,7 @@ class SyncReports:
         agent_instance_user_id_list: List[int] = list(
             self.agent_instance_user_id_map.keys()
         )
-        
+        agent_instance_user_id_list = agent_instance_user_id_list[:2]
         start: int = 0
         end: int = len(agent_instance_user_id_list)
         # Max limit 1000 to provide oracle support and to control memory usage limit
@@ -1373,25 +1515,32 @@ class SyncReports:
             self.agent_instance_user_id_batch_list = agent_instance_user_id_list[
                 slice_range
             ]
-            self.sync_agent_instance_user_reports()
-            if start == 0:
-                reports_to_be_deleted = self.batch_reports_to_be_deleted.copy()
-                folders_to_be_deleted = self.batch_folders_to_be_deleted.copy()
-            else:
-                if self.batch_reports_to_be_deleted:
-                    reports_to_be_deleted.intersection_update(
-                        self.batch_reports_to_be_deleted
-                    )
-                if self.batch_folders_to_be_deleted:
-                    folders_to_be_deleted.intersection_update(
-                        self.batch_folders_to_be_deleted
-                    )
+            self.sync_agent_instance_user_reports(start)
+            # if start == 0:
+            #     reports_to_be_deleted = self.batch_reports_to_be_deleted.copy()
+            #     folders_to_be_deleted = self.batch_folders_to_be_deleted.copy()
+            # else:
+            #     if self.batch_reports_to_be_deleted:
+            #         reports_to_be_deleted.intersection_update(
+            #             self.batch_reports_to_be_deleted
+            #         )
+            #     if self.batch_folders_to_be_deleted:
+            #         folders_to_be_deleted.intersection_update(
+            #             self.batch_folders_to_be_deleted
+            #         )
             self.batch_reports_to_be_deleted.clear()
             self.batch_folders_to_be_deleted.clear()
             start += limit
-
-        self.delete_reports_db(reports_to_be_deleted=list(reports_to_be_deleted))
-        self.delete_folders_db(folders_to_be_deleted=list(folders_to_be_deleted))
+        reports_to_be_deleted: List[int] = bi_report.get_all_reports_to_be_deleted(
+            self.db,
+            agent_instance_id=self.agent_instance_id
+        )
+        self.delete_reports_db(reports_to_be_deleted=reports_to_be_deleted)
+        folders_to_be_deleted: List[int] = bi_folder.get_all_folders_to_be_deleted(
+            self.db,
+            agent_instance_id=self.agent_instance_id
+        )
+        self.delete_folders_db(folders_to_be_deleted=folders_to_be_deleted)
 
         print("delete reports:", len(reports_to_be_deleted))
         print("delete folders:", len(folders_to_be_deleted))
@@ -1432,26 +1581,26 @@ class SyncReports:
                     user_detail.agent_instance_user_id
                 ]
                 self.sync_agent_instance_user_reports()
-                if self.batch_reports_to_be_deleted:
-                    t1=codes.DEFAULT_TIME()
-                    reports_to_be_deleted: List[int] = bi_report.get_reports_to_be_deleted(
-                        db=self.db,
-                        agent_instance_id=self.agent_instance_id,
-                        report_id_list=list(self.batch_reports_to_be_deleted),
-                    )
-                    print("del rep1",codes.DEFAULT_TIME()-t1)
-                    self.delete_reports_db(reports_to_be_deleted=reports_to_be_deleted)
-                    print("del rep2",codes.DEFAULT_TIME()-t1)
-                if self.batch_folders_to_be_deleted:
-                    t1=codes.DEFAULT_TIME()
-                    folders_to_be_deleted: List[int] = bi_folder.get_folders_to_be_deleted(
-                        db=self.db,
-                        agent_instance_id=self.agent_instance_id,
-                        folder_id_list=list(self.batch_folders_to_be_deleted),
-                    )
-                    print("del fol1",codes.DEFAULT_TIME()-t1)
-                    self.delete_folders_db(folders_to_be_deleted=folders_to_be_deleted)
-                    print("del fol2",codes.DEFAULT_TIME()-t1)
+                # if self.batch_reports_to_be_deleted:
+                #     t1=codes.DEFAULT_TIME()
+                #     reports_to_be_deleted: List[int] = bi_report.get_reports_to_be_deleted(
+                #         db=self.db,
+                #         agent_instance_id=self.agent_instance_id,
+                #         report_id_list=list(self.batch_reports_to_be_deleted),
+                #     )
+                #     print("del rep1",codes.DEFAULT_TIME()-t1)
+                #     self.delete_reports_db(reports_to_be_deleted=reports_to_be_deleted)
+                #     print("del rep2",codes.DEFAULT_TIME()-t1)
+                # if self.batch_folders_to_be_deleted:
+                #     t1=codes.DEFAULT_TIME()
+                #     folders_to_be_deleted: List[int] = bi_folder.get_folders_to_be_deleted(
+                #         db=self.db,
+                #         agent_instance_id=self.agent_instance_id,
+                #         folder_id_list=list(self.batch_folders_to_be_deleted),
+                #     )
+                #     print("del fol1",codes.DEFAULT_TIME()-t1)
+                #     self.delete_folders_db(folders_to_be_deleted=folders_to_be_deleted)
+                #     print("del fol2",codes.DEFAULT_TIME()-t1)
             logger.debug(
                 f"Report sync of sync_id {self.sync_id} completed successfully"
             )
@@ -1524,3 +1673,5 @@ class SyncReports:
         raise StopSyncException(
             message=f"Report Sync of sync id {self.sync_id} is interrupted.."
         )
+
+    
