@@ -186,7 +186,7 @@ class CRUDBIReport(CRUDBase[BIReport, BIReportCreate, BIReportUpdate]):
 
         while start < end:
             slice_range: slice = slice(start, start + min(limit, end - start))
-            limited_report_id_list: List[str] = report_id_list[slice_range]
+            limited_report_id_list: List[int] = report_id_list[slice_range]
             report_list: List[BIReport] = self.get(
                 SearchQueryModel(
                     db,
@@ -196,7 +196,7 @@ class CRUDBIReport(CRUDBase[BIReport, BIReportCreate, BIReportUpdate]):
                             model=Model(UserBIReport),
                             relationship=[
                                 BIReport.agent_instance_id == agent_instance_id,
-                                UserBIReport.idx == BIReport.idx,
+                                UserBIReport.bi_report_id == BIReport.idx,
                             ],
                         ),
                     ],

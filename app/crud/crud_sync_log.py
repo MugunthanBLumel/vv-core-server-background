@@ -62,7 +62,7 @@ class CRUDSyncLog(CRUDBase[SyncLog, SyncLogCreate, SyncLogUpdate]):
         int
             status of the sync
         """
-        self.get_first(
+        return self.get_first(
             SearchQueryModel(
                 db, search_column=[SyncLog.status], filters=[SyncLog.idx == idx]
             )

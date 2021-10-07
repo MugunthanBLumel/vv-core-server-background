@@ -172,7 +172,7 @@ class CRUDBIFolder(CRUDBase[BIFolder, BIFolderCreate, BIFolderUpdate]):
 
         while start < end:
             slice_range: slice = slice(start, start + min(limit, end - start))
-            limited_folder_id_list: List[str] = folder_id_list[slice_range]
+            limited_folder_id_list: List[int] = folder_id_list[slice_range]
             folder_list: List[BIFolder] = self.get(
                 SearchQueryModel(
                     db,
@@ -182,7 +182,7 @@ class CRUDBIFolder(CRUDBase[BIFolder, BIFolderCreate, BIFolderUpdate]):
                             model=Model(UserBIFolder),
                             relationship=[
                                 BIFolder.agent_instance_id == agent_instance_id,
-                                UserBIFolder.idx == BIFolder.idx,
+                                UserBIFolder.bi_folder_id == BIFolder.idx,
                             ],
                         ),
                     ],
@@ -212,7 +212,7 @@ class CRUDBIFolder(CRUDBase[BIFolder, BIFolderCreate, BIFolderUpdate]):
         """
         self.batch_insert(db, obj_in=folder_list)
 
-    def delete_folders(self, db: Session, folder_list: List[dict]):
+    def delete_folders(self, db: Session, folder_list: List[dict]) -> None:
         """This method is used to delete folders
 
         Parameters

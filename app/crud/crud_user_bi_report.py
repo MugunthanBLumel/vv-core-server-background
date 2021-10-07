@@ -24,7 +24,7 @@ class CRUDUserBIReport(CRUDBase[UserBIReport, UserBIReportCreate, UserBIReportUp
         """
         return self.batch_insert(db, obj_in=report_user_list)
 
-    def delete_report_users(self, db, report_user_list: List[dict]) -> None:
+    def delete_report_users(self, db: Session, report_user_list: List[dict]) -> None:
         """This method is used to delete report user mappings into
             user_bi_report table
 

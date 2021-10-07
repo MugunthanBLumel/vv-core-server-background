@@ -8,6 +8,7 @@ from app.api.router import TimedRoute
 from app.conf import codes
 from app.core.sync_reports import SyncReports
 from app.crud.crud_sync_log import sync_log
+from app.db.session import ScopedSession
 from app.schemas.sync_log import SyncLogCreate, SyncLogUpdate
 from app.schemas.sync_reports import SyncReportRequest
 from app.schemas.token import CurrentUser
@@ -19,8 +20,9 @@ router: APIRouter = APIRouter(route_class=TimedRoute)
 def sync_reports(
     sync_report_request: SyncReportRequest,
     current_user: CurrentUser = Depends(deps.CurrentUser()),
-    db: Session = Depends(deps.get_db),
+    
 ):
+    db= ScopedSession()
     user_id: int = 1
     sync_name: str = sync_report_request.sync_name
     sync_batch_id: Optional[int] = None
@@ -59,6 +61,7 @@ def sync_reports(
             ),
         )
         sync_report_obj: SyncReports = SyncReports(
+            db,
             sync_id=sync_id, agent_instance_id=agent_instance_id, user_id=user_id
         )
         sync_report_obj.start()
@@ -72,3 +75,4 @@ def sync_reports(
             status=codes.SYNC_STATUS["success"],
         ),
     )
+    db.close()

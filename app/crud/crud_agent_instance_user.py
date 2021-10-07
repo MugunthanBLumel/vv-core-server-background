@@ -12,7 +12,7 @@ class CRUDAgentInstanceUser(
 ):
     def get_agent_instance_user_list(
         self, db: Session, agent_instance_id: int
-    ) -> dict[int:int]:
+    ) -> dict[int, int]:
         """this method fetches all the agent instance user ids of given agent.
 
         Parameters

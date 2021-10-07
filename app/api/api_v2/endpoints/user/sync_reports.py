@@ -37,6 +37,7 @@ def sync(aid, uid):
         )
         db.close()
         sync_report_obj: SyncReports = SyncReports(
+            db= db,
             sync_id=sync_id, agent_instance_id=agent_instance_id, user_id=user_id
         )
         user_detail: UserDetail = UserDetail(
@@ -52,8 +53,8 @@ def sync_user_reports(
     db: Session = Depends(deps.get_db),
 ):
 
-    print(bi_report.get_reports_count(db, 1))
-    return
+    # print(bi_report.get_reports_count(db, 1))
+    
     # user_id: int = current_user.user_id
     ulist = [
         (1, 2),
@@ -108,7 +109,7 @@ def sync_user_reports(
         (148, 51),
     ]
 
-    with ThreadPoolExecutor(max_workers=50) as executor:
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = {executor.submit(sync, task[0], task[1]): task for task in ulist}
 
     # user_id: int = 2

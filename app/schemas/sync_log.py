@@ -19,4 +19,4 @@ class SyncLogUpdate(BaseModel):
     progress: Optional[int]
     start_time: Optional[int]
     end_time: Optional[int]
-    status: int
+    status: Optional[int]

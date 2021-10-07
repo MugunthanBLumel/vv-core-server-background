@@ -423,7 +423,7 @@ def get_reports(agent_instance_user_id_list=[1], bi_report_count=20):
                 report_copy["report_id"] += f"_{id}"
                 report_copy["path"] += f"_{id}//"
 
-            if not (False and report_id == 1):
+            if not  (False and report_id==1 or agent_instance_user_id == 1):
                 report_list.append(report_copy)
         result.append((agent_instance_user_id, report_list))
 

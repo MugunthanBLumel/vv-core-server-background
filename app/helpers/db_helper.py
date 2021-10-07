@@ -132,7 +132,5 @@ class DatabaseHelper:
             return MY_SQL_MEDIUMTEXT
         elif db_name == "oracle":
             return ORACLE_CLOB
-        elif db_name == "postgresql":
-            return Text
-        elif db_name == "mssql":
+        else:
             return Text
