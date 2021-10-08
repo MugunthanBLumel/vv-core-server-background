@@ -9,8 +9,8 @@ from app.schemas.user_history import UserHistoryCreate, UserHistoryUpdate
 
 
 class CRUDUserHistory(CRUDBase[UserHistory, UserHistoryCreate, UserHistoryUpdate]):
-    def delete_user_report_items(
-        self, db: Session, user_report_item_guid_list: List[str], user_id: int
+    def delete_user_items(
+        self, db: Session, user_item_guid_list: List[str], user_id: int
     ) -> None:
         """This method is used to delete user_history records whose guid's in user_report_item_guid_list
 
@@ -25,7 +25,7 @@ class CRUDUserHistory(CRUDBase[UserHistory, UserHistoryCreate, UserHistoryUpdate
         """
         self.update(
             db,
-            filters=[UserHistory.guid.in_(user_report_item_guid_list)],
+            filters=[UserHistory.guid.in_(user_item_guid_list)],
             obj_in=UserHistoryUpdate(status=codes.DELETED),
             user_id=user_id,
         )

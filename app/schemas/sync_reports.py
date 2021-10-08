@@ -56,6 +56,7 @@ class IncomingFolder(BaseModel):
     guid: str
     user_report_count_map: dict[int, int]
     agent_instance_users: List[int]
+    report_guid_set: set[str]
 
 
 class FolderReportCountUpdate(NamedTuple):
@@ -66,3 +67,11 @@ class FolderReportCountUpdate(NamedTuple):
 class UserDetail(NamedTuple):
     user_id: int
     agent_instance_user_id: int
+
+class AddFolderUser(NamedTuple):
+    folder_guid: str
+    bi_report_count: int
+    
+class AgentInstanceUserReport(NamedTuple):
+    agent_instance_user_id: int
+    reports: dict

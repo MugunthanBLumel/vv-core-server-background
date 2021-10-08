@@ -14,6 +14,7 @@ def DEFAULT_TIME() -> int:
     return int(datetime.now(tz=timezone.utc).timestamp())
 
 
+
 path_delimiter: str = "//"
 
 ITEM_TYPE_MAP: Dict[str, int] = {
@@ -51,3 +52,5 @@ REPORT_SYNC_STATUS: dict[str, int] = {
 }
 
 BULK_DB_BATCH_LIMIT = 10000
+HTTP_SUCCESS_CODE = 200
+AGENT_CONTROLLER_FAILURE_CODE = 400

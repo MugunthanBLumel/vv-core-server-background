@@ -9,8 +9,8 @@ from app.schemas.user_report import UserReportCreate, UserReportUpdate
 
 
 class CRUDUserReport(CRUDBase[UserReport, UserReportCreate, UserReportUpdate]):
-    def delete_user_report_items(
-        self, db: Session, user_report_item_guid_list: List[str], user_id: int
+    def delete_user_items(
+        self, db: Session, user_item_guid_list: List[str], user_id: int
     ) -> None:
         """This method is used to delete user_report records whose guid's in user_report_item_guid_list
 
@@ -25,7 +25,7 @@ class CRUDUserReport(CRUDBase[UserReport, UserReportCreate, UserReportUpdate]):
         """
         self.update(
             db,
-            filters=[UserReport.guid.in_(user_report_item_guid_list)],
+            filters=[UserReport.guid.in_(user_item_guid_list)],
             obj_in=UserReportUpdate(status=codes.DELETED),
             user_id=user_id,
         )

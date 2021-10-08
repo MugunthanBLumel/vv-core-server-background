@@ -50,7 +50,14 @@ class HubLogger:
             sys.stdout,
             enqueue=True,
             backtrace=False,
-            level=level.upper(),
+            level="ERROR",
+            format=format,
+        )
+        logger.add(
+            'C:\\VisualBi\\Bihub_3.0\\report_sync\\log\\a.txt',
+            enqueue=True,
+            backtrace=False,
+            level="DEBUG",
             format=format,
         )
         logging.basicConfig(handlers=[InterceptHandler()], level=0)

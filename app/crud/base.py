@@ -161,7 +161,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         except DbException as identifier:
             logger.exception(identifier)
             db.rollback()
-            raise DbException("Error occured while inserting data in the database")
+            raise DbException("Error occurred while inserting data in the database")
 
     def bulk_core_insert(self, db: Session, *, obj_in: List[dict]) -> None:
         """Inserts bulk of records into database table
@@ -177,7 +177,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         exc.IntegrityError
             raised when duplicate records are inserted
         exc.InternalError,exc.OperationalError
-            raised when dead lock has occured during insert
+            raised when dead lock has occurred during insert
         """
         try:
 
@@ -202,7 +202,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Raises
         ------
         exc.InternalError,exc.OperationalError
-            raised when dead lock has occured during insert
+            raised when dead lock has occurred during insert
         """
         try:
             db.bulk_update_mappings(self.model, obj_in)
@@ -235,7 +235,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Raises
         ------
         exc.InternalError,exc.OperationalError
-            raised when dead lock has occured during insert and max retry exceeded
+            raised when dead lock has occurred during insert and max retry exceeded
         DbException
             raised on unhandled exceptions and dead lock retry exceeded
         """
@@ -246,6 +246,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 try:
                     self.bulk_core_insert(db, obj_in=limited_obj_in)
                     del obj_in[start : start + min(batch_limit, end - start)]
+                    start, end = 0, len(obj_in)
                 except exc.IntegrityError as identifier:
                     unfinished_inserts = obj_in[start:]
                     if len(unfinished_inserts) > 1:
@@ -275,10 +276,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                         break
                     else:
                         raise identifier
-                start += min(batch_limit, end - start)
+                # start += min(batch_limit, end - start)
         except DbException as identifier:
             logger.exception(identifier)
-            raise DbException("Error occured while inserting data in the database")
+            raise DbException("Error occurred while inserting data in the database")
 
     def batch_update(
         self,
@@ -304,7 +305,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         Raises
         ------
         exc.InternalError,exc.OperationalError
-            raised when dead lock has occured during update and max retry exceeded
+            raised when dead lock has occurred during update and max retry exceeded
         DbException
             raised on unhandled exceptions and dead lock retry exceeded
         """
@@ -316,6 +317,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 try:
                     self.bulk_core_update(db, obj_in=limited_obj_in)
                     del obj_in[start : start + min(batch_limit, end - start)]
+                    start, end = 0, len(obj_in)
                 except (exc.InternalError, exc.OperationalError) as identifier:
                     if retry_count < codes.DEAD_LOCK_RETRY_LIMIT:
                         wait_time = randrange(1, 5) + 2 * retry_count
@@ -330,10 +332,10 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                     else:
                         raise identifier
 
-                start += min(batch_limit, end - start)
+                # start += min(batch_limit, end - start)
         except DbException as identifier:
             logger.exception(identifier)
-            raise DbException("Error occured while updating data in the database")
+            raise DbException("Error occurred while updating data in the database")
 
     def update(
         self,
@@ -390,7 +392,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             logger.exception(identifier)
             db.rollback()
             raise DbException(
-                "Error occured while updating existing data in the database"
+                "Error occurred while updating existing data in the database"
             )
 
     def update_obj(
@@ -435,7 +437,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         except DbException as identifier:
             logger.exception(identifier)
             db.rollback()
-            raise DbException("Error occured while updating data in the database")
+            raise DbException("Error occurred while updating data in the database")
 
     def remove(self, db: Session, *, id: int) -> None:
         """Removes a record from the database table
@@ -457,7 +459,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         except DbException as identifier:
             logger.exception(identifier)
             db.rollback()
-            raise DbException("Error occured while removing data from the database")
+            raise DbException("Error occurred while removing data from the database")
 
     def delete(self, db: Session, *, id: int) -> None:
         """Deletes a record in the database table by updating status to 500
@@ -479,7 +481,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         except DbException as identifier:
             logger.exception(identifier)
             db.rollback()
-            raise DbException("Error occured while deleting data in the database")
+            raise DbException("Error occurred while deleting data in the database")
 
     def create_query(self, search_object: SearchQueryModel) -> None:
         """Construct the search query with related filters and relationship
